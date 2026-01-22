@@ -60,29 +60,29 @@ function LandingPage() {
                 <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center mb-4">
                   <ShieldCheck className="text-gray-700" size={24} />
                 </div>
-                <h2 className="text-lg font-bold text-gray-900 mb-2">Staff</h2>
+                <h2 className="text-lg font-bold text-gray-900 mb-2">Petugas</h2>
                 <p className="text-sm text-gray-600 mb-6 leading-relaxed">
-                  Untuk pihak staff yang akan mengelola data katalog dan sirkulasi perpustakaan.
+                  Untuk pihak petugas yang akan mengelola data katalog dan sirkulasi perpustakaan.
                 </p>
                 <button className="w-full bg-gray-700 hover:bg-gray-800 text-white py-2.5 rounded-md font-semibold transition-colors flex items-center justify-center gap-2 text-sm">
-                  Masuk Akun Staff
+                  Masuk Akun Petugas
                   <ArrowRight size={16} />
                 </button>
               </div>
             </div>
 
-            {/* Card Umum */}
+            {/* Card Staff */}
             <div className="bg-white rounded-lg border border-gray-200 hover:shadow-lg transition-shadow duration-200 h-full">
               <div className="p-6">
                 <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center mb-4">
                   <User className="text-green-600" size={24} />
                 </div>
-                <h2 className="text-lg font-bold text-gray-900 mb-2">Umum</h2>
+                <h2 className="text-lg font-bold text-gray-900 mb-2">Staff</h2>
                 <p className="text-sm text-gray-600 mb-6 leading-relaxed">
                   Untuk guru, staff administrasi, dan seluruh warga sekolah lainnya.
                 </p>
                 <button className="w-full bg-green-600 hover:bg-green-700 text-white py-2.5 rounded-md font-semibold transition-colors flex items-center justify-center gap-2 text-sm">
-                  Masuk Akun Umum
+                  Masuk Akun Staff
                   <ArrowRight size={16} />
                 </button>
               </div>
