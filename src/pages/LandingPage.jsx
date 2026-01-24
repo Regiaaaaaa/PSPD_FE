@@ -1,6 +1,10 @@
 import { User, ShieldCheck, GraduationCap, ArrowRight, HelpCircle } from 'lucide-react';
 
+import { useNavigate } from 'react-router-dom';
+
+
 function LandingPage() {
+  const navigate = useNavigate();
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       {/* Header */}
@@ -47,14 +51,16 @@ function LandingPage() {
                 <p className="text-sm text-gray-600 mb-6 leading-relaxed">
                   Untuk peserta didik yang ingin mengakses katalog buku dan melakukan peminjaman.
                 </p>
-                <button className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-md font-semibold transition-colors flex items-center justify-center gap-2 text-sm">
+                <button 
+                onClick={() => navigate('/login/siswa')}
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-md font-semibold transition-colors flex items-center justify-center gap-2 text-sm">
                   Masuk Akun Siswa
                   <ArrowRight size={16} />
                 </button>
               </div>
             </div>
 
-            {/* Card Staff */}
+            {/* Card Petugas */}
             <div className="bg-white rounded-lg border border-gray-200 hover:shadow-lg transition-shadow duration-200 h-full">
               <div className="p-6">
                 <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center mb-4">
@@ -64,7 +70,10 @@ function LandingPage() {
                 <p className="text-sm text-gray-600 mb-6 leading-relaxed">
                   Untuk pihak petugas yang akan mengelola data katalog dan sirkulasi perpustakaan.
                 </p>
-                <button className="w-full bg-gray-700 hover:bg-gray-800 text-white py-2.5 rounded-md font-semibold transition-colors flex items-center justify-center gap-2 text-sm">
+                <button
+                  onClick={() => navigate('/login/petugas')}
+                  className="w-full bg-gray-700 hover:bg-gray-800 text-white py-2.5 rounded-md font-semibold transition-colors flex items-center justify-center gap-2 text-sm"
+                >
                   Masuk Akun Petugas
                   <ArrowRight size={16} />
                 </button>
@@ -81,7 +90,9 @@ function LandingPage() {
                 <p className="text-sm text-gray-600 mb-6 leading-relaxed">
                   Untuk guru, staff administrasi, dan seluruh warga sekolah lainnya.
                 </p>
-                <button className="w-full bg-green-600 hover:bg-green-700 text-white py-2.5 rounded-md font-semibold transition-colors flex items-center justify-center gap-2 text-sm">
+                <button 
+                 onClick={() => navigate('/login/staff')}
+                className="w-full bg-green-600 hover:bg-green-700 text-white py-2.5 rounded-md font-semibold transition-colors flex items-center justify-center gap-2 text-sm">
                   Masuk Akun Staff
                   <ArrowRight size={16} />
                 </button>
