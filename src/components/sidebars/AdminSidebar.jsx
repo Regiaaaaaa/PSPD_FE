@@ -109,8 +109,8 @@ export default function AdminSidebar() {
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 overflow-y-auto py-4 px-2">
-          <div className="space-y-1">
+        <nav className="flex-1 overflow-y-auto py-6 px-3">
+          <div className="space-y-2">
             {menuItems.map((item) => {
               const IconComponent = item.icon;
               return (
@@ -119,7 +119,7 @@ export default function AdminSidebar() {
                   to={item.path}
                   onClick={() => setIsMobileMenuOpen(false)}
                   className={`
-                    flex items-center px-3 py-2 rounded text-sm
+                    flex items-center px-3 py-3 rounded text-sm
                     transition-colors
                     ${
                       isActive(item.path)
@@ -140,10 +140,10 @@ export default function AdminSidebar() {
 
         {/* Toggle Button - Show at bottom when collapsed (desktop only) */}
         {!isExpanded && !isMobileMenuOpen && (
-          <div className="hidden lg:block border-t border-gray-200 p-2">
+          <div className="hidden lg:block border-t border-gray-200 p-3">
             <button
               onClick={() => setIsExpanded(!isExpanded)}
-              className="w-full flex items-center justify-center px-3 py-2 rounded text-sm text-gray-600 hover:bg-gray-50"
+              className="w-full flex items-center justify-center px-3 py-3 rounded text-sm text-gray-600 hover:bg-gray-50"
               title="Expand"
             >
               <ChevronRight size={20} className="flex-shrink-0" />
@@ -152,11 +152,11 @@ export default function AdminSidebar() {
         )}
 
         {/* Logout Button */}
-        <div className="border-t border-gray-200 p-2">
+        <div className="border-t border-gray-200 p-3">
           <button
             onClick={handleLogout}
             className={`
-              w-full flex items-center px-3 py-2 rounded text-sm
+              w-full flex items-center px-3 py-3 rounded text-sm
               text-gray-600 hover:bg-gray-50
               ${(isExpanded || isMobileMenuOpen) ? 'gap-3' : 'justify-center'}
             `}
