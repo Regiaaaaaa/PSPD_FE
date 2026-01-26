@@ -1,5 +1,8 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
+import { logout } from "../../services/authService";
+import { clearAuth } from "../../utils/auth";
+
 import { 
   LayoutDashboard, 
   Users, 
@@ -38,11 +41,16 @@ export default function AdminSidebar() {
 
   const isActive = (path) => location.pathname === path;
 
-  const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    navigate('/login/petugas');
-  };
+  const handleLogout = async () => {
+  try {
+    await logout();
+  } catch {
+    // ( Ignore Error)
+  } finally {
+    clearAuth();
+    navigate("/login");
+  }
+};
 
   return (
     <>
