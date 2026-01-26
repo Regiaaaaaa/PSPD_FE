@@ -1,10 +1,10 @@
-const API_URL = "http://localhost:8000/api";
+import { getToken } from "../utils/auth";
 
-/* =====================
-   PETUGAS (admin, operator)
-===================== */
-export const loginPetugas = async (payload) => {
-  const res = await fetch(`${API_URL}/petugas/login`, {
+const API_URL = "/api";
+
+// Login
+export const login = async (payload) => {
+  const res = await fetch(`${API_URL}/login`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -15,35 +15,15 @@ export const loginPetugas = async (payload) => {
   const data = await res.json();
 
   if (!res.ok) {
-    throw new Error(data.message || "Login petugas gagal");
+    throw new Error(data.message || "Login gagal");
   }
 
   return data;
 };
 
-/* =====================
-   SISWA
-===================== */
-export const loginSiswa = async (payload) => {
-  const res = await fetch(`${API_URL}/siswa/login`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(payload),
-  });
-
-  const data = await res.json();
-
-  if (!res.ok) {
-    throw new Error(data.message || "Login siswa gagal");
-  }
-
-  return data;
-};
-
+// Register Siswa
 export const registerSiswa = async (payload) => {
-  const res = await fetch(`${API_URL}/siswa/register`, {
+  const res = await fetch(`${API_URL}/register/siswa`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -60,29 +40,9 @@ export const registerSiswa = async (payload) => {
   return data;
 };
 
-/* =====================
-   STAFF
-===================== */
-export const loginStaff = async (payload) => {
-  const res = await fetch(`${API_URL}/staff/login`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(payload),
-  });
-
-  const data = await res.json();
-
-  if (!res.ok) {
-    throw new Error(data.message || "Login staff gagal");
-  }
-
-  return data;
-};
-
+// Register Staff
 export const registerStaff = async (payload) => {
-  const res = await fetch(`${API_URL}/staff/register`, {
+  const res = await fetch(`${API_URL}/register/staff`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -97,4 +57,16 @@ export const registerStaff = async (payload) => {
   }
 
   return data;
+};
+
+export const logout = async () => {
+  const token = getToken();
+  if (!token) return;
+
+  await fetch(`${API_URL}/logout`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
 };
