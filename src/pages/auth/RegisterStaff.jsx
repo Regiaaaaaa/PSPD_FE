@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { registerStaff } from "../../../services/authService";
+import { registerStaff } from "../../services/authService";
 import { User, Mail, Lock, Hash, Briefcase } from "lucide-react";
 
 export default function RegisterStaff() {
@@ -26,7 +26,7 @@ export default function RegisterStaff() {
     try {
       await registerStaff(form);
       alert("Registrasi staff berhasil");
-      navigate("/login/staff");
+      navigate("/login");
     } catch (err) {
       setError(err.message || "Registrasi gagal");
     } finally {
