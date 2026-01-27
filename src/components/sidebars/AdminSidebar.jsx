@@ -2,6 +2,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { logout } from "../../services/authService";
 import { clearAuth } from "../../utils/auth";
+import toast from "react-hot-toast";
 
 import { 
   LayoutDashboard, 
@@ -42,15 +43,24 @@ export default function AdminSidebar() {
   const isActive = (path) => location.pathname === path;
 
   const handleLogout = async () => {
-  try {
-    await logout();
-  } catch {
-    // ( Ignore Error)
-  } finally {
-    clearAuth();
-    navigate("/login");
-  }
-};
+    try {
+      await logout();
+      toast.success("Logout berhasil! Sampai jumpa.", {
+        duration: 2000,
+        position: "top-center",
+      });
+    } catch {
+      toast.error("Terjadi kesalahan saat logout.", {
+        duration: 2000,
+        position: "top-center",
+      });
+    } finally {
+      clearAuth();
+      setTimeout(() => {
+        navigate("/login");
+      }, 1000);
+    }
+  };
 
   return (
     <>
@@ -165,7 +175,7 @@ export default function AdminSidebar() {
             onClick={handleLogout}
             className={`
               w-full flex items-center px-3 py-3 rounded text-sm
-              text-gray-600 hover:bg-gray-50
+              text-gray-600 hover:bg-gray-50 transition-colors
               ${(isExpanded || isMobileMenuOpen) ? 'gap-3' : 'justify-center'}
             `}
             title={(!isExpanded && !isMobileMenuOpen) ? 'Logout' : ''}

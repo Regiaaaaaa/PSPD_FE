@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { login } from "../../services/authService";
 import { saveAuth } from "../../utils/auth";
 import { Shield, Mail, Lock } from "lucide-react";
+import toast, { Toaster } from "react-hot-toast";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -12,49 +13,71 @@ export default function Login() {
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
-  e.preventDefault();
-  setLoading(true);
-  setError("");
+    e.preventDefault();
+    setLoading(true);
+    setError("");
 
-  try {
-    const res = await login({ email, password });
-    saveAuth(res);
+    try {
+      const res = await login({ email, password });
+      saveAuth(res);
 
-    const roleRedirectMap = {
-      admin: "/admin/dashboard",
-      operator: "/operator/dashboard",
-      staff: "/users/dashboard",
-      siswa: "/users/dashboard",
-    };
+      const roleRedirectMap = {
+        admin: "/admin/dashboard",
+        operator: "/operator/dashboard",
+        staff: "/users/dashboard",
+        siswa: "/users/dashboard",
+      };
 
-    const redirectTo = roleRedirectMap[res.user.role];
+      const redirectTo = roleRedirectMap[res.user.role];
 
-    if (!redirectTo) {
-      throw new Error("Role tidak dikenali");
+      if (!redirectTo) {
+        throw new Error("Role tidak dikenali");
+      }
+
+      toast.success("Login berhasil! Selamat datang.", {
+        duration: 2000,
+        position: "top-center",
+      });
+
+      setTimeout(() => {
+        navigate(redirectTo);
+      }, 1000);
+    } catch (err) {
+      setError(err.message || "Login gagal");
+      toast.error(err.message || "Login gagal. Periksa kembali kredensial Anda.", {
+        duration: 3000,
+        position: "top-center",
+      });
+    } finally {
+      setLoading(false);
     }
-
-    navigate(redirectTo);
-  } catch (err) {
-    setError(err.message || "Login gagal");
-  } finally {
-    setLoading(false);
-  }
-};
-
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
+      <Toaster />
+      
       {/* Header */}
       <header className="bg-white border-b border-gray-200">
         <div className="container mx-auto px-4 md:px-6 py-3 md:py-4 flex items-center justify-between">
           <div className="flex items-center gap-2 md:gap-3">
-            <img src="/icon1.png" alt="Logo Taruna Bhakti" className="w-10 h-10 md:w-11 md:h-11" />
+            <img 
+              src="/icon1.png" 
+              alt="Logo Taruna Bhakti" 
+              className="w-10 h-10 md:w-11 md:h-11" 
+            />
             <div>
-              <h1 className="text-sm md:text-base font-semibold text-gray-900">PSPD Taruna Bhakti</h1>
-              <p className="text-xs text-gray-500 hidden sm:block">Portal Sistem Perpustakaan Digital</p>
+              <h1 className="text-sm md:text-base font-semibold text-gray-900">
+                PPSD Taruna Bhakti
+              </h1>
+              <p className="text-xs text-gray-500 hidden sm:block">
+                Portal Perpustakaan Sekolah Digital
+              </p>
             </div>
           </div>
-          <a href="/" className="text-xs sm:text-sm text-gray-600 hover:text-gray-900">Beranda</a>
+          <a href="/" className="text-xs sm:text-sm text-gray-600 hover:text-gray-900">
+            Beranda
+          </a>
         </div>
       </header>
 
@@ -67,8 +90,12 @@ export default function Login() {
               <Shield className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               Login 
             </div>
-            <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2">Masuk ke Akun</h2>
-            <p className="text-sm sm:text-base text-gray-600">Masukkan kredensial Anda untuk melanjutkan</p>
+            <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2">
+              Masuk ke Akun
+            </h2>
+            <p className="text-sm sm:text-base text-gray-600">
+              Masukkan kredensial Anda untuk melanjutkan
+            </p>
           </div>
 
           {/* Login Form Card */}
@@ -79,7 +106,7 @@ export default function Login() {
               </div>
             )}
 
-            <div className="space-y-5">
+            <form onSubmit={handleSubmit} className="space-y-5">
               {/* Email */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1.5">
@@ -95,7 +122,7 @@ export default function Login() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
-                    className="w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 placeholder:text-gray-400"
+                    className="w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                   />
                 </div>
               </div>
@@ -115,25 +142,28 @@ export default function Login() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
-                    className="w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 placeholder:text-gray-400"
+                    className="w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                   />
                 </div>
               </div>
 
               {/* Submit Button */}
               <button
-                onClick={handleSubmit}
+                type="submit"
                 disabled={loading}
                 className="w-full bg-blue-600 text-white py-2.5 rounded-md font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 {loading ? "Memproses..." : "Masuk"}
               </button>
-            </div>
+            </form>
 
             {/* Help Link */}
             <div className="mt-6 pt-6 border-t border-gray-200 text-center">
               <p className="text-sm text-gray-600">
-                Mengalami kendala? <a href="/" className="text-blue-600 hover:text-blue-700 font-medium">Daftar Disini</a>
+                Mengalami kendala?{" "}
+                <a href="/portal/register" className="text-blue-600 hover:text-blue-700 font-medium">
+                  Daftar Disini
+                </a>
               </p>
             </div>
           </div>
@@ -141,13 +171,13 @@ export default function Login() {
       </div>
 
       {/* Footer */}
-      <div className="bg-white border-t border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 sm:py-4">
-          <p className="text-xs sm:text-sm text-gray-500 text-center">
-            © 2025 SMA Taruna Bhakti. Portal Sistem Perpustakaan Digital (PSPD).
+      <footer className="bg-white border-t border-gray-200 mt-auto">
+        <div className="container mx-auto px-4 md:px-6 py-3 md:py-4">
+          <p className="text-center text-xs md:text-sm text-gray-600">
+            © 2025 SMK Taruna Bhakti. Portal Perpustakaan Sekolah Digital (PPSD).
           </p>
         </div>
-      </div>
+      </footer>
     </div>
   );
 }
