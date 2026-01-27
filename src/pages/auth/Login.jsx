@@ -2,69 +2,70 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { login } from "../../services/authService";
 import { saveAuth } from "../../utils/auth";
-import { Shield, Mail, Lock } from "lucide-react";
+import { Shield, Mail, Lock, Eye, EyeOff } from "lucide-react";
 import toast, { Toaster } from "react-hot-toast";
 
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
   const navigate = useNavigate();
+  const [errorMsg, setErrorMsg] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+
+
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setError("");
+  e.preventDefault();
+  setLoading(true);
+  setErrorMsg("");
 
-    try {
-      const res = await login({ email, password });
-      saveAuth(res);
+  try {
+    const res = await login({ email, password });
+    saveAuth(res);
 
-      const roleRedirectMap = {
-        admin: "/admin/dashboard",
-        operator: "/operator/dashboard",
-        staff: "/users/dashboard",
-        siswa: "/users/dashboard",
-      };
+    const roleRedirectMap = {
+      admin: "/admin/dashboard",
+      operator: "/operator/dashboard",
+      staff: "/users/dashboard",
+      siswa: "/users/dashboard",
+    };
 
-      const redirectTo = roleRedirectMap[res.user.role];
+    const redirectTo = roleRedirectMap[res.user.role];
 
-      if (!redirectTo) {
-        throw new Error("Role tidak dikenali");
-      }
-
-      toast.success("Login berhasil! Selamat datang.", {
-        duration: 2000,
-        position: "top-center",
-      });
-
-      setTimeout(() => {
-        navigate(redirectTo);
-      }, 1000);
-    } catch (err) {
-      setError(err.message || "Login gagal");
-      toast.error(err.message || "Login gagal. Periksa kembali kredensial Anda.", {
-        duration: 3000,
-        position: "top-center",
-      });
-    } finally {
-      setLoading(false);
+    if (!redirectTo) {
+      throw new Error("Role tidak dikenali");
     }
-  };
+
+    // Toast success
+    toast.success("Login berhasil! Selamat datang.", {
+      duration: 3000,
+      position: "top-center",
+    });
+
+    setTimeout(() => {
+      navigate(redirectTo);
+    }, 1000);
+  } catch (err) {
+  setErrorMsg(err);
+} finally {
+    setLoading(false);
+  }
+};
+
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       <Toaster />
-      
+
       {/* Header */}
       <header className="bg-white border-b border-gray-200">
         <div className="container mx-auto px-4 md:px-6 py-3 md:py-4 flex items-center justify-between">
           <div className="flex items-center gap-2 md:gap-3">
-            <img 
-              src="/icon1.png" 
-              alt="Logo Taruna Bhakti" 
-              className="w-10 h-10 md:w-11 md:h-11" 
+            <img
+              src="/icon1.png"
+              alt="Logo Taruna Bhakti"
+              className="w-10 h-10 md:w-11 md:h-11"
             />
             <div>
               <h1 className="text-sm md:text-base font-semibold text-gray-900">
@@ -88,7 +89,7 @@ export default function Login() {
           <div className="text-center mb-6 sm:mb-8">
             <div className="inline-flex items-center gap-2 px-3 sm:px-4 py-1.5 sm:py-2 bg-slate-100 text-slate-700 rounded-full text-xs sm:text-sm font-medium mb-3 sm:mb-4">
               <Shield className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-              Login 
+              Login
             </div>
             <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2">
               Masuk ke Akun
@@ -100,9 +101,9 @@ export default function Login() {
 
           {/* Login Form Card */}
           <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6 sm:p-8">
-            {error && (
-              <div className="mb-6 p-3 bg-red-50 border border-red-200 rounded-md">
-                <p className="text-sm text-red-700">{error}</p>
+            {errorMsg && (
+              <div className="mb-4 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                {errorMsg}
               </div>
             )}
 
@@ -132,20 +133,44 @@ export default function Login() {
                 <label className="block text-sm font-medium text-gray-700 mb-1.5">
                   Kata Sandi <span className="text-red-500">*</span>
                 </label>
+
                 <div className="relative">
+                  {/* Lock icon */}
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                     <Lock className="h-5 w-5 text-gray-400" />
                   </div>
+
+                  {/* Input */}
                   <input
-                    type="password"
+                    type={showPassword ? "text" : "password"}
                     placeholder="Masukkan kata sandi"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
-                    className="w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                    className="w-full pl-10 pr-12 py-2.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                   />
+
+                  {/* Eye icon */}
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
+                  >
+                    {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                  </button>
+                </div>
+
+                {/* Lupa password */}
+                <div className="mt-1 text-right">
+                  <a
+                    href="/forgot-password"
+                    className="text-xs text-blue-600 hover:text-blue-700"
+                  >
+                    Lupa kata sandi?
+                  </a>
                 </div>
               </div>
+
 
               {/* Submit Button */}
               <button
@@ -157,12 +182,15 @@ export default function Login() {
               </button>
             </form>
 
-            {/* Help Link */}
+            {/* Register Link */}
             <div className="mt-6 pt-6 border-t border-gray-200 text-center">
               <p className="text-sm text-gray-600">
-                Mengalami kendala?{" "}
-                <a href="/portal/register" className="text-blue-600 hover:text-blue-700 font-medium">
-                  Daftar Disini
+                Belum punya akun?{" "}
+                <a
+                  href="/portal/register"
+                  className="text-blue-600 hover:text-blue-700 font-medium"
+                >
+                  Daftar di sini
                 </a>
               </p>
             </div>

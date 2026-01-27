@@ -15,11 +15,13 @@ export const login = async (payload) => {
   const data = await res.json();
 
   if (!res.ok) {
-    throw new Error(data.message || "Login gagal");
+    // ⬅️ lempar MESSAGE STRING, bukan Error object
+    throw data.message;
   }
 
   return data;
 };
+
 
 // Register Siswa
 export const registerSiswa = async (payload) => {
@@ -69,4 +71,43 @@ export const logout = async () => {
       Authorization: `Bearer ${token}`,
     },
   });
+};
+
+// Kirim OTP
+export const sendOtp = async (payload) => {
+  const res = await fetch(`/api/send-otp`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.message || "Gagal kirim OTP");
+  return data;
+};
+
+// Verifikasi OTP
+export const verifyOtp = async (payload) => {
+  const res = await fetch(`/api/verify-otp`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.message || "OTP salah");
+  return data;
+};
+
+// Reset password
+export const resetPassword = async (payload) => {
+  const res = await fetch(`/api/reset-password`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.message || "Reset gagal");
+  return data;
 };

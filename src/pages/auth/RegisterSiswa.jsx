@@ -6,8 +6,8 @@ import toast, { Toaster } from "react-hot-toast";
 
 export default function RegisterSiswa() {
   const navigate = useNavigate();
+  const [showAlert, setShowAlert] = useState(true);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
   const [form, setForm] = useState({
     nomor_induk_siswa: "",
     name: "",
@@ -29,7 +29,6 @@ export default function RegisterSiswa() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setError("");
 
     try {
       await registerSiswa(form);
@@ -40,14 +39,6 @@ export default function RegisterSiswa() {
       setTimeout(() => {
         navigate("/login");
       }, 1500);
-    } catch (err) {
-      if (err.message && err.message.includes("<!doctype")) {
-        setError("Terjadi kesalahan pada server. Silakan coba lagi.");
-      } else if (err.response?.data?.message) {
-        setError(err.response.data.message);
-      } else {
-        setError("Registrasi gagal. Periksa kembali data Anda.");
-      }
     } finally {
       setLoading(false);
     }
@@ -97,12 +88,24 @@ export default function RegisterSiswa() {
 
           {/* Form */}
           <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-5 sm:p-6 max-w-2xl mx-auto">
-            {error && (
-              <div className="mb-5 p-3 bg-red-50 border border-red-200 rounded-md">
-                <p className="text-sm text-red-700">{error}</p>
+
+            {showAlert && (
+              <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-md flex items-start justify-between gap-3">
+                <p className="text-xs text-yellow-800">
+                  ⚠️ Gunakan email yang masih aktif.  
+                  Jika menggunakan email yang tidak aktif, silakan untuk pengajuan reset password melalu admin Perpustakaan.
+                </p>
+
+                {/* Tombol close */}
+                <button
+                  type="button"
+                  onClick={() => setShowAlert(false)}
+                  className="text-yellow-700 hover:text-yellow-900 text-sm font-bold leading-none"
+                >
+                  ✕
+                </button>
               </div>
             )}
-
             <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Nomor Induk */}
                 <div>

@@ -6,8 +6,8 @@ import toast, { Toaster } from "react-hot-toast";
 
 export default function RegisterStaff() {
   const navigate = useNavigate();
+  const [showAlert, setShowAlert] = useState(true);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
   const [form, setForm] = useState({
     nomor_induk_pegawai: "",
     name: "",
@@ -22,10 +22,13 @@ export default function RegisterStaff() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setError("");
 
     try {
-      await registerStaff(form);
+      const payload = { ...form };
+      if (!payload.nomor_induk_pegawai) {
+        delete payload.nomor_induk_pegawai;
+      }
+      await registerStaff(payload);
       toast.success("Registrasi staff berhasil! Silakan login.", {
         duration: 3000,
         position: "top-center",
@@ -33,8 +36,6 @@ export default function RegisterStaff() {
       setTimeout(() => {
         navigate("/login");
       }, 1500);
-    } catch (err) {
-      setError(err.message || "Registrasi gagal");
     } finally {
       setLoading(false);
     }
@@ -84,9 +85,21 @@ export default function RegisterStaff() {
 
           {/* Register Form Card */}
           <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-5 sm:p-6 max-w-2xl mx-auto">
-            {error && (
-              <div className="mb-5 p-3 bg-red-50 border border-red-200 rounded-md">
-                <p className="text-sm text-red-700">{error}</p>
+            {showAlert && (
+            <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-md flex items-start justify-between gap-3">
+              <p className="text-xs text-yellow-800">
+                ⚠️ Gunakan email yang masih aktif.  
+                Jika menggunakan email yang tidak aktif, silakan untuk pengajuan reset password melalu admin Perpustakaan.
+              </p>
+
+
+            <button
+              type="button"
+              onClick={() => setShowAlert(false)}
+              className="text-yellow-700 hover:text-yellow-900 text-sm font-bold leading-none"
+            >
+                 ✕
+                </button>
               </div>
             )}
 
@@ -129,7 +142,7 @@ export default function RegisterStaff() {
               {form.nomor_induk_pegawai.length > 0 &&
                 form.nomor_induk_pegawai.length < 18 && (
                   <p className="text-xs text-red-500 mt-1">
-                    Nomor Induk Pegawai harus 18 digit
+                    Nomor Induk Tidak Valid
                   </p>
                 )}
             </div>

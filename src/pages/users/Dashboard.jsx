@@ -1,4 +1,4 @@
-import UserLayout from "../../components/layouts/UserLayout";
+import UserLayout from "../../components/layouts/AppLayout";
 
 export default function UserDashboard() {
   return (

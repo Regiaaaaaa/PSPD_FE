@@ -7,8 +7,10 @@ import RegisterStaff from "./pages/auth/RegisterStaff";
 import AdminDashboard from "./pages/admin/Dashboard";
 import OperatorDashboard from "./pages/operator/Dashboard";
 import UserDashboard from './pages/users/Dashboard';
-
-import ScrollToTop from './components/ScrollToTop'; // ⬅️ TAMBAH INI
+import ForgotPassword from "./pages/auth/ForgotPassword";
+import VerifyOtp from "./pages/auth/VerifyOtp";
+import ResetPassword from "./pages/auth/ResetPassword";
+import ScrollToTop from './components/ScrollToTop';
 
 function App() {
   return (
@@ -24,6 +26,11 @@ function App() {
         <Route path="/admin/dashboard" element={<AdminDashboard />} />
         <Route path="/operator/dashboard" element={<OperatorDashboard />} />
         <Route path="/users/dashboard" element={<UserDashboard />} />
+
+        {/* Forgot Password Flow */}
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/verify-otp" element={<VerifyOtp />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
       </Routes>
     </Router>
   )
