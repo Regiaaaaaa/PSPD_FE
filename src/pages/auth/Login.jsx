@@ -36,13 +36,7 @@ export default function Login() {
     if (!redirectTo) {
       throw new Error("Role tidak dikenali");
     }
-
-    // Toast success
-    toast.success("Login berhasil! Selamat datang.", {
-      duration: 3000,
-      position: "top-center",
-    });
-
+    toast.success("Login berhasil! Selamat datang 👋");
     setTimeout(() => {
       navigate(redirectTo);
     }, 1000);
@@ -56,7 +50,7 @@ export default function Login() {
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
-      <Toaster />
+
 
       {/* Header */}
       <header className="bg-white border-b border-gray-200">

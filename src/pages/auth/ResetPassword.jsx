@@ -40,10 +40,7 @@ export default function ResetPassword() {
         password_confirmation: confirm,
       });
 
-      toast.success("Password berhasil dibuat! Silakan login", {
-        duration: 3000,
-        position: "top-center",
-      });
+      toast.success("Password berhasil dibuat! Silakan login");
 
       setTimeout(() => {
         navigate("/login");

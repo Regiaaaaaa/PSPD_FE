@@ -1,4 +1,4 @@
-import OperatorLayout from "../../components/layouts/AppLayout";
+import OperatorLayout from "../../components/AppLayout";
 
 export default function OperatorDashboard() {
   return (

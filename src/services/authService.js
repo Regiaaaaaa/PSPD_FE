@@ -15,13 +15,11 @@ export const login = async (payload) => {
   const data = await res.json();
 
   if (!res.ok) {
-    // ⬅️ lempar MESSAGE STRING, bukan Error object
     throw data.message;
   }
 
   return data;
 };
-
 
 // Register Siswa
 export const registerSiswa = async (payload) => {
@@ -29,6 +27,7 @@ export const registerSiswa = async (payload) => {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
+      "Accept": "application/json",
     },
     body: JSON.stringify(payload),
   });
@@ -48,6 +47,7 @@ export const registerStaff = async (payload) => {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
+      "Accept": "application/json",
     },
     body: JSON.stringify(payload),
   });
@@ -109,5 +109,46 @@ export const resetPassword = async (payload) => {
 
   const data = await res.json();
   if (!res.ok) throw new Error(data.message || "Reset gagal");
+  return data;
+};
+
+
+export const updateProfile = async (payload) => {
+  const token = getToken();
+  const res = await fetch(`${API_URL}/admin/profile`, { 
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(payload),
+  });
+
+  const data = await res.json();
+
+  if (!res.ok) {
+    throw data.message || "Gagal memperbarui profile";
+  }
+
+  return data;
+};
+
+export const changePassword = async (payload) => {
+  const token = getToken();
+  const res = await fetch(`${API_URL}/admin/profile/change-password`, {  
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(payload),
+  });
+
+  const data = await res.json();
+
+  if (!res.ok) {
+    throw data.message || "Gagal mengubah password";
+  }
+
   return data;
 };

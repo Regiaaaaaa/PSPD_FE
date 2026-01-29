@@ -1,4 +1,4 @@
-import AdminLayout from "../../components/layouts/AppLayout";
+import AdminLayout from "../../components/AppLayout";
 import { Users, BookOpen, FolderOpen, Clock } from "lucide-react";
 
 export default function AdminDashboard() {

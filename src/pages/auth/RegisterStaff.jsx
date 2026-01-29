@@ -29,13 +29,12 @@ export default function RegisterStaff() {
         delete payload.nomor_induk_pegawai;
       }
       await registerStaff(payload);
-      toast.success("Registrasi staff berhasil! Silakan login.", {
-        duration: 3000,
-        position: "top-center",
-      });
+      toast.success("Registrasi staff berhasil! Silakan login.");
       setTimeout(() => {
         navigate("/login");
       }, 1500);
+    } catch (err) {
+      toast.error(err.message);
     } finally {
       setLoading(false);
     }
