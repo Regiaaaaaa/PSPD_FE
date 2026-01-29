@@ -1,37 +1,31 @@
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { useState, useEffect } from "react";
-import { logout } from "../../services/authService";
-import { clearAuth } from "../../utils/auth";
-import toast from "react-hot-toast";
 
 import { 
   LayoutDashboard, 
   Users, 
   BookOpen, 
   FolderOpen,
-  LogOut,
   ChevronLeft,
   ChevronRight,
   X
 } from "lucide-react";
 
-export default function AdminSidebar() {
+export default function AdminSidebar({ isOpen, onClose }) {
   const location = useLocation();
-  const navigate = useNavigate();
   const [isExpanded, setIsExpanded] = useState(true);
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   // Reset mobile menu when switching to desktop
   useEffect(() => {
     const handleResize = () => {
       if (window.innerWidth >= 1024) {
-        setIsMobileMenuOpen(false);
+        onClose();
       }
     };
 
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
-  }, []);
+  }, [onClose]);
 
   const menuItems = [
     { path: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -42,42 +36,12 @@ export default function AdminSidebar() {
 
   const isActive = (path) => location.pathname === path;
 
-  const handleLogout = async () => {
-    try {
-      await logout();
-      toast.success("Logout berhasil! Sampai jumpa.", {
-        duration: 2000,
-        position: "top-center",
-      });
-    } catch {
-      toast.error("Terjadi kesalahan saat logout.", {
-        duration: 2000,
-        position: "top-center",
-      });
-    } finally {
-      clearAuth();
-      setTimeout(() => {
-        navigate("/login");
-      }, 1000);
-    }
-  };
-
   return (
     <>
-      {/* Mobile Menu Toggle - Hide when menu is open */}
-      {!isMobileMenuOpen && (
-        <button
-          onClick={() => setIsMobileMenuOpen(true)}
-          className="lg:hidden fixed top-4 left-4 z-50 bg-gray-800 text-white px-3 py-2 rounded shadow-lg"
-        >
-          ☰
-        </button>
-      )}
-
       {/* Overlay */}
-      {isMobileMenuOpen && (
+      {isOpen && (
         <div
-          onClick={() => setIsMobileMenuOpen(false)}
+          onClick={onClose}
           className="lg:hidden fixed inset-0 bg-black/30 z-40"
         />
       )}
@@ -88,27 +52,27 @@ export default function AdminSidebar() {
           bg-white border-r border-gray-200 flex flex-col h-screen
           transition-all duration-300
           fixed lg:sticky top-0 z-40
-          ${isMobileMenuOpen ? 'w-52' : isExpanded ? 'w-52' : 'w-16'}
-          ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+          ${isOpen ? 'w-52' : isExpanded ? 'w-52' : 'w-16'}
+          ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
         `}
       >
         {/* Header */}
-        <div className={`h-14 flex items-center border-b border-gray-200 ${(isExpanded || isMobileMenuOpen) ? 'justify-between px-3' : 'justify-center px-2'}`}>
-          <div className={`flex items-center gap-2 min-w-0 ${(!isExpanded && !isMobileMenuOpen) && 'justify-center'}`}>
+        <div className={`h-14 flex items-center border-b border-gray-200 ${(isExpanded || isOpen) ? 'justify-between px-3' : 'justify-center px-2'}`}>
+          <div className={`flex items-center gap-2 min-w-0 ${(!isExpanded && !isOpen) && 'justify-center'}`}>
             <img 
               src="/icon1.png" 
               alt="Logo" 
               className="w-7 h-7 object-contain flex-shrink-0"
             />
-            {(isExpanded || isMobileMenuOpen) && (
+            {(isExpanded || isOpen) && (
               <span className="font-semibold text-gray-800 text-sm truncate">Admin Panel</span>
             )}
           </div>
           
           {/* Close button for mobile */}
-          {isMobileMenuOpen && (
+          {isOpen && (
             <button
-              onClick={() => setIsMobileMenuOpen(false)}
+              onClick={onClose}
               className="lg:hidden p-1.5 hover:bg-gray-100 rounded text-gray-600"
             >
               <X size={18} />
@@ -116,7 +80,7 @@ export default function AdminSidebar() {
           )}
 
           {/* Collapse button for desktop when expanded */}
-          {isExpanded && !isMobileMenuOpen && (
+          {isExpanded && !isOpen && (
             <button
               onClick={() => setIsExpanded(!isExpanded)}
               className="hidden lg:block p-1.5 hover:bg-gray-100 rounded text-gray-600 flex-shrink-0"
@@ -135,7 +99,7 @@ export default function AdminSidebar() {
                 <Link
                   key={item.path}
                   to={item.path}
-                  onClick={() => setIsMobileMenuOpen(false)}
+                  onClick={onClose}
                   className={`
                     flex items-center px-3 py-3 rounded text-sm
                     transition-colors
@@ -144,12 +108,12 @@ export default function AdminSidebar() {
                         ? 'bg-gray-100 text-gray-900'
                         : 'text-gray-600 hover:bg-gray-50'
                     }
-                    ${(isExpanded || isMobileMenuOpen) ? 'gap-3' : 'justify-center'}
+                    ${(isExpanded || isOpen) ? 'gap-3' : 'justify-center'}
                   `}
-                  title={(!isExpanded && !isMobileMenuOpen) ? item.label : ''}
+                  title={(!isExpanded && !isOpen) ? item.label : ''}
                 >
                   <IconComponent size={20} className="flex-shrink-0" />
-                  {(isExpanded || isMobileMenuOpen) && <span>{item.label}</span>}
+                  {(isExpanded || isOpen) && <span>{item.label}</span>}
                 </Link>
               );
             })}
@@ -157,8 +121,8 @@ export default function AdminSidebar() {
         </nav>
 
         {/* Toggle Button - Show at bottom when collapsed (desktop only) */}
-        {!isExpanded && !isMobileMenuOpen && (
-          <div className="hidden lg:block border-t border-gray-200 p-3">
+        {!isExpanded && !isOpen && (
+          <div className="border-t border-gray-200 p-3">
             <button
               onClick={() => setIsExpanded(!isExpanded)}
               className="w-full flex items-center justify-center px-3 py-3 rounded text-sm text-gray-600 hover:bg-gray-50"
@@ -168,22 +132,6 @@ export default function AdminSidebar() {
             </button>
           </div>
         )}
-
-        {/* Logout Button */}
-        <div className="border-t border-gray-200 p-3">
-          <button
-            onClick={handleLogout}
-            className={`
-              w-full flex items-center px-3 py-3 rounded text-sm
-              text-gray-600 hover:bg-gray-50 transition-colors
-              ${(isExpanded || isMobileMenuOpen) ? 'gap-3' : 'justify-center'}
-            `}
-            title={(!isExpanded && !isMobileMenuOpen) ? 'Logout' : ''}
-          >
-            <LogOut size={20} className="flex-shrink-0" />
-            {(isExpanded || isMobileMenuOpen) && <span>Logout</span>}
-          </button>
-        </div>
       </aside>
     </>
   );
