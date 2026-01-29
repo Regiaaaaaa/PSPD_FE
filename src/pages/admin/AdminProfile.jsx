@@ -3,7 +3,7 @@ import { useState } from "react";
 import { getUser } from "../../utils/auth";
 import { updateProfile, changePassword } from "../../services/authService";
 import toast from "react-hot-toast";
-import AdminLayout from "../../components/AppLayout";
+import AppLayout from "../../components/AppLayout";
 
 export default function AdminProfile() {
   const user = getUser();
@@ -36,74 +36,176 @@ export default function AdminProfile() {
     try {
       const res = await changePassword(password);
       toast.success(res.message || "Password berhasil diubah");
-      setPassword({ current_password: "", password: "", password_confirmation: "" });
+      setPassword({
+        current_password: "",
+        password: "",
+        password_confirmation: "",
+      });
     } catch {
       toast.error("Gagal ubah password");
     }
   };
 
   return (
-    <AdminLayout>
-      <div className="max-w-md space-y-6">
-        <h1 className="text-lg font-semibold">Profile Admin</h1>
+    <AppLayout>
+      <div className="w-full flex justify-center px-4 py-6">
+        <div className="w-full max-w-2xl">
+          {/* Header */}
+          <div className="mb-6">
+            <h1 className="text-xl font-semibold text-gray-800">
+              Profile Admin
+            </h1>
+            <p className="text-sm text-gray-500">
+              Kelola informasi akun dan keamanan
+            </p>
+          </div>
 
-        {/* Profile */}
-        <form onSubmit={submitProfile} className="space-y-3 bg-white p-4 border rounded">
-          <input
-            className="w-full border px-3 py-2 text-sm rounded"
-            placeholder="Nama"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-          />
+          {/* Card */}
+          <div className="bg-white rounded-xl shadow-sm">
+            <div className="tabs tabs-lift px-4 pt-3">
+              {/* ================= PROFILE ================= */}
+              <input
+                type="radio"
+                name="profile_tabs"
+                defaultChecked
+                aria-label="Profile"
+                className="
+                  tab
+                  font-medium
+                  text-gray-700
+                  checked:text-blue-600
+                  [--tab-bg:#f1f5f9]
+                  [--tab-border-color:transparent]
+                "
+              />
 
-          <input
-            className="w-full border px-3 py-2 text-sm rounded bg-gray-100"
-            value={user?.email}
-            disabled
-          />
+              <div className="tab-content bg-white p-0 pb-6">
+                <form onSubmit={submitProfile}>
+                  <fieldset className="fieldset p-4">
+                    <legend className="fieldset-legend text-sm font-semibold">
+                      Informasi Profile
+                    </legend>
 
-          <button className="w-full bg-blue-600 text-white py-2 text-sm rounded">
-            Simpan Profile
-          </button>
-        </form>
+                    <div className="space-y-4">
+                      <div>
+                        <label className="label">
+                          <span className="label-text">Nama</span>
+                        </label>
+                        <input
+                          className="input input-bordered w-full"
+                          value={name}
+                          onChange={(e) => setName(e.target.value)}
+                        />
+                      </div>
 
-        {/* Password */}
-        <form onSubmit={submitPassword} className="space-y-3 bg-white p-4 border rounded">
-          <input
-            type="password"
-            placeholder="Password lama"
-            className="w-full border px-3 py-2 text-sm rounded"
-            value={password.current_password}
-            onChange={(e) =>
-              setPassword({ ...password, current_password: e.target.value })
-            }
-          />
+                      <div>
+                        <label className="label">
+                          <span className="label-text">Email</span>
+                        </label>
+                        <input
+                          className="input input-bordered w-full bg-gray-100"
+                          value={user?.email}
+                          disabled
+                        />
+                      </div>
 
-          <input
-            type="password"
-            placeholder="Password baru"
-            className="w-full border px-3 py-2 text-sm rounded"
-            value={password.password}
-            onChange={(e) =>
-              setPassword({ ...password, password: e.target.value })
-            }
-          />
+                      <button className="btn bg-blue-600 hover:bg-blue-700 text-white border-none w-fit mt-2">
+  Simpan Profile
+</button>
 
-          <input
-            type="password"
-            placeholder="Konfirmasi password"
-            className="w-full border px-3 py-2 text-sm rounded"
-            value={password.password_confirmation}
-            onChange={(e) =>
-              setPassword({ ...password, password_confirmation: e.target.value })
-            }
-          />
+                    </div>
+                  </fieldset>
+                </form>
+              </div>
 
-          <button className="w-full bg-blue-600 text-white py-2 text-sm rounded">
-            Ubah Password
-          </button>
-        </form>
+              {/* ================= SECURITY ================= */}
+              <input
+                type="radio"
+                name="profile_tabs"
+                aria-label="Security"
+                className="
+                  tab
+                  font-medium
+                  text-gray-700
+                  checked:text-blue-600
+                  [--tab-bg:#f1f5f9]
+                  [--tab-border-color:transparent]
+                "
+              />
+
+              <div className="tab-content bg-white p-0 pb-6">
+
+                <form onSubmit={submitPassword}>
+                  <fieldset className="fieldset p-4">
+                    <legend className="fieldset-legend text-sm font-semibold">
+                      Keamanan Akun
+                    </legend>
+
+                    <div className="space-y-4">
+                      <div>
+                        <label className="label">
+                          <span className="label-text">Password Lama</span>
+                        </label>
+                        <input
+                          type="password"
+                          className="input input-bordered w-full"
+                          value={password.current_password}
+                          onChange={(e) =>
+                            setPassword({
+                              ...password,
+                              current_password: e.target.value,
+                            })
+                          }
+                        />
+                      </div>
+
+                      <div>
+                        <label className="label">
+                          <span className="label-text">Password Baru</span>
+                        </label>
+                        <input
+                          type="password"
+                          className="input input-bordered w-full"
+                          value={password.password}
+                          onChange={(e) =>
+                            setPassword({
+                              ...password,
+                              password: e.target.value,
+                            })
+                          }
+                        />
+                      </div>
+
+                      <div>
+                        <label className="label">
+                          <span className="label-text">
+                            Konfirmasi Password
+                          </span>
+                        </label>
+                        <input
+                          type="password"
+                          className="input input-bordered w-full"
+                          value={password.password_confirmation}
+                          onChange={(e) =>
+                            setPassword({
+                              ...password,
+                              password_confirmation: e.target.value,
+                            })
+                          }
+                        />
+                      </div>
+
+                      <button className="btn bg-blue-600 hover:bg-blue-700 text-white border-none w-fit">
+                        Ubah Password
+                      </button>
+                    </div>
+                  </fieldset>
+                </form>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
-    </AdminLayout>
+    </AppLayout>
   );
 }

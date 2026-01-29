@@ -105,8 +105,8 @@ export default function AdminSidebar({ isOpen, onClose }) {
                     transition-colors
                     ${
                       isActive(item.path)
-                        ? 'bg-gray-100 text-gray-900'
-                        : 'text-gray-600 hover:bg-gray-50'
+                         ? 'bg-blue-50 text-blue-700'
+                         : 'text-gray-600 hover:bg-gray-50'
                     }
                     ${(isExpanded || isOpen) ? 'gap-3' : 'justify-center'}
                   `}

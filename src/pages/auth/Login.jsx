@@ -40,12 +40,12 @@ export default function Login() {
     setTimeout(() => {
       navigate(redirectTo);
     }, 1000);
-  } catch (err) {
-  setErrorMsg(err);
-} finally {
-    setLoading(false);
-  }
-};
+    } catch (err) {
+      setErrorMsg(err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
 
   return (
