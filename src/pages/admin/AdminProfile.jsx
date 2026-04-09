@@ -1,7 +1,7 @@
 // pages/admin/AdminProfile.jsx
 import { useState } from "react";
 import { getUser } from "../../utils/auth";
-import { updateProfile, changePassword } from "../../services/authService";
+import { updateProfile, changePassword } from "../../services/admin/profileService";
 import toast from "react-hot-toast";
 import AppLayout from "../../components/AppLayout";
 
@@ -22,7 +22,7 @@ export default function AdminProfile() {
       localStorage.setItem("user", JSON.stringify({ ...user, name }));
       toast.success(res.message || "Profile diperbarui");
     } catch {
-      toast.error("Gagal update profile");
+      toast.error("Gagal ubah profile");
     }
   };
 
