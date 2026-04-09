@@ -2,9 +2,7 @@ import { useState } from "react";
 import AdminSidebar from "../components/Admin/AdminSidebar";
 import OperatorSidebar from "../components/Operator/OperatorSidebar";
 import UserSidebar from "../components/Users/UserSidebar";
-import AdminTopBar from "../components/Admin/AdminTopBar";
-import OperatorTopBar from "../components/Operator/OperatorTopBar";
-import UserTopBar from "../components/Users/UserTopBar";
+import TopBar from "../components/TopBar";
 import { getUserRole } from "../utils/auth";
 
 const sidebarMap = {
@@ -14,19 +12,11 @@ const sidebarMap = {
   staff: UserSidebar,
 };
 
-const topbarMap = {
-  admin: AdminTopBar,
-  operator: OperatorTopBar,
-  siswa: UserTopBar,
-  staff: UserTopBar,
-};
-
 export default function AppLayout({ children }) {
   const role = getUserRole();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   
   const Sidebar = sidebarMap[role];
-  const TopBar = topbarMap[role] || UserTopBar;
 
   return (
     <div className="flex h-screen overflow-hidden">
