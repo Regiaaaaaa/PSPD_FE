@@ -3,7 +3,6 @@ import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.jsx'
 
-// Optimized favicon update - only adds timestamp in development
 const updateFavicon = () => {
   document.querySelectorAll("link[rel*='icon']").forEach(link => link.remove());
   const favicon = document.createElement('link');
