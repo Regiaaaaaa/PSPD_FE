@@ -82,7 +82,7 @@ export default function ForgotPassword() {
         </div>
 
         <p className="text-center text-xs sm:text-sm text-base-content/60 mt-4 px-4">
-          Kode OTP berlaku selama 10 menit
+          Kode OTP berlaku selama 5 menit
         </p>
       </div>
     </div>
