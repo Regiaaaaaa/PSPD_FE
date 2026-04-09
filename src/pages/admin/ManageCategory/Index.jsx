@@ -69,7 +69,7 @@ const ManageCategory = () => {
     if (shouldRefresh) fetchCategories();
   };
 
-  // ✅ hasActiveFilter di level komponen
+  
   const hasActiveFilter = !!searchTerm;
 
   const resetFilters = () => {

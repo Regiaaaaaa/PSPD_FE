@@ -149,7 +149,7 @@ const CreateBook = () => {
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
 
-                {/* Judul - full width on top */}
+                {/* Judul */}
                 <div className="form-control md:col-span-2">
                   <label className="label">
                     <span className="label-text text-xs sm:text-sm font-medium">
@@ -168,7 +168,7 @@ const CreateBook = () => {
                   />
                 </div>
 
-                {/* ISBN - in grid (left column) */}
+                {/* ISBN */}
                 <div className="form-control">
                   <label className="label">
                     <span className="label-text text-xs sm:text-sm font-medium">

@@ -16,7 +16,7 @@ const EditBook = () => {
   const [initialData, setInitialData] = useState({
     stok_total: 0,
     dalam_perbaikan: 0,
-    stok_dipinjam: 0, // ← tambah ini, cuma variabel JS bukan kolom DB
+    stok_dipinjam: 0,
   });
 
   const [formData, setFormData] = useState({
@@ -52,13 +52,13 @@ const EditBook = () => {
       const data = await getBookDetail(id);
       const book = data.data;
 
-      // Hitung stok_dipinjam dari data yang ada (bukan kolom DB)
+      // Hitung Stok 
       const dipinjam = book.stok_total - (book.stok_tersedia || 0) - (book.dalam_perbaikan || 0);
 
       setInitialData({
         stok_total: book.stok_total,
         dalam_perbaikan: book.dalam_perbaikan || 0,
-        stok_dipinjam: dipinjam, // ← simpan buat patokan min
+        stok_dipinjam: dipinjam, 
       });
 
       setFormData({
@@ -164,8 +164,6 @@ const EditBook = () => {
       toast.error('Tahun terbit harus 4 digit');
       return;
     }
-
-    // ← Fix validasi stok: min = dipinjam + perbaikan (bukan stok_total lama)
     const minStokTotal = initialData.stok_dipinjam + parseInt(formData.dalam_perbaikan || 0);
     if (parseInt(formData.stok_total) < minStokTotal) {
       toast.error(`Stok total minimal ${minStokTotal} (jumlah dipinjam + dalam perbaikan)`);
@@ -209,7 +207,6 @@ const EditBook = () => {
     }
   };
 
-  // Hitung min stok dinamis (reaktif saat dalam_perbaikan berubah)
   const minStokTotal = initialData.stok_dipinjam + parseInt(formData.dalam_perbaikan || 0);
 
   if (loading) {
@@ -373,7 +370,7 @@ const EditBook = () => {
                     type="number"
                     name="stok_total"
                     placeholder="0"
-                    min={minStokTotal} // ← dinamis, bukan initialData.stok_total
+                    min={minStokTotal}
                     className="input input-sm sm:input-md input-bordered bg-white w-full"
                     value={formData.stok_total}
                     onChange={handleInputChange}
@@ -382,7 +379,6 @@ const EditBook = () => {
                   />
                   <label className="label">
                     <span className="label-text-alt text-xs text-gray-500">
-                      {/* ← teks hint ikut dinamis */}
                       Minimal: {minStokTotal} (jumlah dipinjam + dalam perbaikan / salah satunya)
                     </span>
                   </label>

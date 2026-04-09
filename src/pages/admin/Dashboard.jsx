@@ -263,8 +263,6 @@ export default function Dashboard() {
             <span>⚠️ {error}</span>
           </div>
         )}
-
-        {/* Loading awal */}
         {loading && !data && (
           <div className="flex items-center gap-3 text-gray-500 py-12 text-sm">
             <span className="loading loading-spinner loading-md" />

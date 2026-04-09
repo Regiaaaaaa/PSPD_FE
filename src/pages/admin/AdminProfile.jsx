@@ -1,4 +1,3 @@
-// pages/admin/AdminProfile.jsx
 import { useState } from "react";
 import { getUser } from "../../utils/auth";
 import { updateProfile, changePassword } from "../../services/admin/profileService";
@@ -63,7 +62,7 @@ export default function AdminProfile() {
           {/* Card */}
           <div className="bg-white rounded-xl shadow-sm">
             <div className="tabs tabs-lift px-4 pt-3">
-              {/* ================= PROFILE ================= */}
+              {/* Profile*/}
               <input
                 type="radio"
                 name="profile_tabs"
@@ -118,7 +117,7 @@ export default function AdminProfile() {
                 </form>
               </div>
 
-              {/* ================= SECURITY ================= */}
+              {/* Security*/}
               <input
                 type="radio"
                 name="profile_tabs"

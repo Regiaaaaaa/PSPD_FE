@@ -100,8 +100,6 @@ const ManageUsers = () => {
     setSearchTerm('');
     setCurrentPage(1);
   };
-
-  // ✅ hasActiveFilter di luar filter(), bukan di dalam
   const hasActiveFilter = searchTerm || filterTingkat !== 'all' || filterJurusan !== 'all' || filterKelas !== 'all';
 
   const filteredUsers = users
