@@ -14,8 +14,6 @@ import {
 export default function AdminSidebar({ isOpen, onClose }) {
   const location = useLocation();
   const [isExpanded, setIsExpanded] = useState(true);
-
-  // Reset mobile menu when switching to desktop
   useEffect(() => {
     const handleResize = () => {
       if (window.innerWidth >= 1024) {
@@ -30,8 +28,8 @@ export default function AdminSidebar({ isOpen, onClose }) {
   const menuItems = [
     { path: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
     { path: "/admin/users", label: "Users", icon: Users },
-    { path: "/admin/books", label: "Books", icon: BookOpen },
     { path: "/admin/categories", label: "Categories", icon: FolderOpen },
+    { path: "/admin/books", label: "Books", icon: BookOpen },
   ];
 
   const isActive = (path) => location.pathname === path;
@@ -120,7 +118,7 @@ export default function AdminSidebar({ isOpen, onClose }) {
           </div>
         </nav>
 
-        {/* Toggle Button - Show at bottom when collapsed (desktop only) */}
+        {/* Toggle Button */}
         {!isExpanded && !isOpen && (
           <div className="border-t border-gray-200 p-3">
             <button

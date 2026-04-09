@@ -4,10 +4,11 @@ import { useState, useEffect } from "react";
 
 import { 
   LayoutDashboard, 
-  BookOpen, 
-  History,
+  BookOpenCheck, 
+  ArrowLeftRight,
   ChevronLeft,
   ChevronRight,
+  ReceiptText,
   X
 } from "lucide-react";
 
@@ -28,8 +29,9 @@ export default function UserSidebar({ isOpen, onClose }) {
 
   const menuItems = [
     { path: "/users/dashboard", label: "Dashboard", icon: LayoutDashboard },
-    { path: "/users/books", label: "Katalog Buku", icon: BookOpen },
-    { path: "/users/history", label: "Riwayat", icon: History },
+    { path: "/users/katalog-buku", label: "Katalog Buku", icon: BookOpenCheck },
+    { path: "/users/peminjaman-saya", label: "Peminjaman", icon: ArrowLeftRight },
+    { path: "/users/penalty", label: "Denda Saya", icon: ReceiptText },
   ];
 
   const isActive = (path) => location.pathname === path;
@@ -103,8 +105,8 @@ export default function UserSidebar({ isOpen, onClose }) {
                     transition-colors
                     ${
                       isActive(item.path)
-                        ? 'bg-green-50 text-green-700'
-                        : 'text-gray-600 hover:bg-gray-50'
+                       ? 'bg-blue-50 text-blue-700'
+                       : 'text-gray-600 hover:bg-gray-50'
                     }
                     ${(isExpanded || isOpen) ? 'gap-3' : 'justify-center'}
                   `}
@@ -118,7 +120,7 @@ export default function UserSidebar({ isOpen, onClose }) {
           </div>
         </nav>
 
-        {/* Toggle Button - Show at bottom when collapsed (desktop only) */}
+        {/* Toggle Button */}
         {!isExpanded && !isOpen && (
           <div className="border-t border-gray-200 p-3">
             <button
