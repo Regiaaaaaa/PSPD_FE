@@ -147,7 +147,6 @@ export default function LaporanDenda() {
         {/* Filter */}
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 mb-5">
           <div className="flex flex-wrap items-end gap-3">
-            {/* Bulan & Tahun: selalu berdampingan */}
             <div className="flex gap-3 flex-1 min-w-0">
               <div className="flex-1 min-w-[100px]">
                 <label className="block text-xs font-medium text-gray-600 mb-1.5">Bulan</label>
@@ -175,7 +174,7 @@ export default function LaporanDenda() {
               </div>
             </div>
 
-            {/* Status Pembayaran: full-width di mobile, auto di sm+ */}
+            {/* Status Pembayaran */}
             <div className="w-full sm:flex-1 sm:w-auto sm:min-w-[140px]">
               <label className="block text-xs font-medium text-gray-600 mb-1.5">
                 Status Pembayaran
@@ -190,8 +189,6 @@ export default function LaporanDenda() {
                 ))}
               </select>
             </div>
-
-            {/* Tombol: full-width di mobile, auto di sm+ */}
             <button
               className="btn btn-sm btn-primary gap-2 w-full sm:w-auto sm:px-5"
               onClick={() => { fetchData(); setCurrentPage(1); }}

@@ -154,12 +154,7 @@ export default function LaporanTransaksi() {
 
         {/* Filter */}
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 mb-5">
-          {/*
-            Mobile      : bulan & tahun 2 kolom, status full-width di bawah, tombol full-width
-            ≥640px (sm) : bulan | tahun | status sejajar (3 kolom), tombol ikut sejajar
-          */}
           <div className="flex flex-wrap items-end gap-3">
-            {/* Bulan & Tahun: selalu berdampingan di semua ukuran */}
             <div className="flex gap-3 flex-1 min-w-0">
               <div className="flex-1 min-w-[100px]">
                 <label className="block text-xs font-medium text-gray-600 mb-1.5">Bulan</label>
@@ -187,7 +182,7 @@ export default function LaporanTransaksi() {
               </div>
             </div>
 
-            {/* Status: full-width di mobile, auto flex di sm+ */}
+            {/* Status */}
             <div className="w-full sm:flex-1 sm:w-auto sm:min-w-[130px]">
               <label className="block text-xs font-medium text-gray-600 mb-1.5">Status</label>
               <select
@@ -201,7 +196,7 @@ export default function LaporanTransaksi() {
               </select>
             </div>
 
-            {/* Tombol: full-width di mobile, auto di sm+ */}
+            {/* Tombol */}
             <button
               className="btn btn-sm btn-primary gap-2 w-full sm:w-auto sm:px-5"
               onClick={handleTampilkan}
@@ -260,7 +255,7 @@ export default function LaporanTransaksi() {
             </div>
           ) : (
             <>
-              {/* Mobile Card View — tampil di bawah lg */}
+              {/* Mobile Card View */}
               <div className="block lg:hidden divide-y divide-gray-100">
                 {paginated.map((item, idx) => (
                   <div key={item.id} className="p-4">
@@ -279,7 +274,7 @@ export default function LaporanTransaksi() {
                       </div>
                     </div>
 
-                    {/* Tanggal: 3 kolom grid, teks lebih terbaca */}
+                    {/* Tanggal */}
                     <div className="grid grid-cols-3 gap-2 mt-3">
                       <div className="bg-gray-50 rounded-lg p-2">
                         <p className="text-[10px] text-gray-400 mb-0.5">Tgl Pinjam</p>
@@ -304,7 +299,7 @@ export default function LaporanTransaksi() {
                 ))}
               </div>
 
-              {/* Desktop Table — tampil di lg ke atas */}
+              {/* Desktop Table */}
               <div className="hidden lg:block overflow-x-auto">
                 <table className="table w-full">
                   <thead>

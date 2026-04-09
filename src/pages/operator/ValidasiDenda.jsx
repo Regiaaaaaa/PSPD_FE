@@ -50,7 +50,7 @@ const ValidasiDenda = () => {
     }
   };
 
-  // ─── Handlers ───────────────────────────────────────────────
+  // Handler
   const handleDetailClick = (item) => {
     setSelectedDenda(item);
     setShowDetailModal(true);
@@ -88,7 +88,7 @@ const ValidasiDenda = () => {
 
   const hasActiveFilter = searchTerm || filterTingkat !== 'all' || filterJurusan !== 'all' || filterKelas !== 'all';
 
-  // ─── Helpers ─────────────────────────────────────────────────
+  // Helpers
   const getNama = (item) => {
     return item.transaksi?.user?.siswa?.nama_lengkap
       || item.transaksi?.user?.staff?.nama_lengkap
@@ -123,9 +123,8 @@ const ValidasiDenda = () => {
     }).format(amount);
   };
 
-  // ─── Filter — hanya tampilkan belum lunas ────────────────────
   const filteredDenda = dendaList
-    .filter((item) => item.status_pembayaran !== 'lunas') // ← hanya belum lunas
+    .filter((item) => item.status_pembayaran !== 'lunas') 
     .filter((item) => {
       if (activeTab === 'siswa') return !!item.transaksi?.user?.siswa;
       if (activeTab === 'staff') return !!item.transaksi?.user?.staff;
@@ -146,10 +145,10 @@ const ValidasiDenda = () => {
       return matchSearch && matchTingkat && matchJurusan && matchKelas;
     });
 
-  // ─── Stats ───────────────────────────────────────────────────
+  // Stats
   const totalBelumLunas = dendaList.filter((d) => d.status_pembayaran !== 'lunas').length;
 
-  // ─── Pagination ──────────────────────────────────────────────
+  // Pagination
   const totalPages = Math.ceil(filteredDenda.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const paginatedData = filteredDenda.slice(startIndex, startIndex + itemsPerPage);
@@ -210,7 +209,7 @@ const ValidasiDenda = () => {
                 </select>
               </div>
 
-              {/* Jurusan - hanya aktif tab siswa */}
+              {/* Jurusan */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Jurusan</label>
                 <select
@@ -228,7 +227,7 @@ const ValidasiDenda = () => {
                 </select>
               </div>
 
-              {/* Kelas - hanya aktif tab siswa */}
+              {/* Kelas */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Kelas</label>
                 <select
@@ -321,7 +320,7 @@ const ValidasiDenda = () => {
                           </p>
                         </td>
 
-                        {/* Kolom dinamis kelas/jabatan */}
+                        {/* Kelas/jabatan */}
                         {activeTab === 'siswa' && (
                           <td className="text-sm text-gray-600">{getSubInfo(item)}</td>
                         )}
@@ -387,7 +386,7 @@ const ValidasiDenda = () => {
         </div>
       </div>
 
-      {/* ══ Detail Modal ══ */}
+      {/* Detail Modal */}
       {showDetailModal && selectedDenda && (
         <div className="modal modal-open">
           <div className="modal-box w-11/12 max-w-md">
@@ -465,7 +464,7 @@ const ValidasiDenda = () => {
         </div>
       )}
 
-      {/* ══ Modal Konfirmasi Bayar ══ */}
+      {/* Modal Konfirmasi Bayar */}
       <ConfirmModal
         isOpen={showBayarModal}
         onClose={() => { setShowBayarModal(false); setSelectedBayar(null); }}

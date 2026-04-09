@@ -1,5 +1,6 @@
 import { BookOpen, GraduationCap, User, HelpCircle, LogIn } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import BookCarousel from '../components/common/BookCarousel';
 
 function LandingPage() {
   const navigate = useNavigate();
@@ -18,7 +19,7 @@ function LandingPage() {
               </div>
             </div>
             
-            {/* Header Actions - White Button */}
+            {/* Header Actions */}
             <button
               onClick={() => navigate('/login')}
               className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-md text-xs sm:text-sm text-gray-700 hover:bg-gray-100 font-medium transition-all"
@@ -103,7 +104,10 @@ function LandingPage() {
             </div>
           </div>
 
-          {/* Help Card - White Background */}
+          {/* Book Carousel */}
+          <BookCarousel />
+
+          {/* Help Card */}
           <div className="max-w-2xl mx-auto">
             <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-5 sm:p-6">
               <div className="text-center">

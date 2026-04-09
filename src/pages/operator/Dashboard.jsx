@@ -10,7 +10,6 @@ const MONTHS = [
 const now = new Date();
 const YEARS = Array.from({ length: 5 }, (_, i) => now.getFullYear() - i);
 
-// ─── Shared primitives ───────────────────────────────────────────────────────
 
 const KpiCard = ({ label, value, sub, accentColor, delay = 0 }) => (
   <div style={{
@@ -137,8 +136,6 @@ const WarningPillCard = ({
   </div>
 );
 
-// ─── Page ────────────────────────────────────────────────────────────────────
-
 export default function DashboardOperator() {
   const [data, setData]       = useState(null);
   const [loading, setLoading] = useState(true);
@@ -264,7 +261,7 @@ export default function DashboardOperator() {
               <KpiCard label="Menunggu persetujuan"   value={data.menunggu_persetujuan}    sub="perlu diproses"  accentColor="#EF9F27" delay={180} />
             </div>
 
-            {/* Rincian + rekap denda */}
+            {/* Rekap denda*/}
             <div className="mid-grid">
               <Panel title="Rincian status transaksi">
                 <StatRow label="Sedang dipinjam"        value={data.sedang_dipinjam}        color="#378ADD" total={total} />

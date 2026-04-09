@@ -38,7 +38,7 @@ const DetailVerifikasiModal = ({
 
         <div className="px-4 py-4 space-y-4">
 
-             {/* Status Banner — stok */}
+             {/* Status Banner */}
           <div className={`flex items-center gap-2 rounded-lg p-3 border ${
             stokOk
               ? 'bg-green-50 border-green-200'

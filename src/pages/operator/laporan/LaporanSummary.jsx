@@ -164,11 +164,6 @@ export default function LaporanSummary() {
             <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
               Transaksi
             </p>
-            {/*
-              Mobile  : 1 kolom
-              ≥480px  : 2 kolom (supaya tidak terlalu sempit di HP sedang)
-              ≥640px  : 3 kolom
-            */}
             <div className="grid grid-cols-1 min-[480px]:grid-cols-2 sm:grid-cols-3 gap-3 mb-5">
               <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-sm p-4 text-white">
                 <div className="flex items-center justify-between gap-3">
@@ -212,7 +207,6 @@ export default function LaporanSummary() {
               Denda
             </p>
             <div className="grid grid-cols-1 min-[480px]:grid-cols-2 sm:grid-cols-3 gap-3 mb-6">
-              {/* Total nominal: selalu full-width di mobile & 2-col agar nominal tidak terpotong */}
               <div className="bg-gradient-to-br from-rose-500 to-rose-600 rounded-xl shadow-sm p-4 text-white min-[480px]:col-span-2 sm:col-span-1">
                 <div className="flex items-center justify-between gap-3">
                   <div className="min-w-0">
@@ -272,12 +266,6 @@ export default function LaporanSummary() {
                 </button>
               </div>
             </div>
-
-            {/* Quick nav ke sub laporan */}
-            {/*
-              Mobile  : 1 kolom
-              ≥560px  : 2 kolom (lebih pas dari sm/640px bawaan)
-            */}
             <div className="grid grid-cols-1 min-[560px]:grid-cols-2 gap-3">
               <Link
                 to="/operator/laporan/transaksi"

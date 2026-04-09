@@ -70,7 +70,6 @@ const Pengembalian = () => {
     }
   };
 
-  // FIX: Bandingkan hanya tanggal (tanpa jam) supaya deadline hari ini tidak dianggap terlambat
   const isLate = (tgl_deadline) => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -79,7 +78,6 @@ const Pengembalian = () => {
     return today > deadline;
   };
 
-  // FIX: Sama, pakai date-only agar selisih hari akurat
   const hitungSelisihHari = (tgl_deadline) => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);

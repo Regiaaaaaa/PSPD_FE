@@ -45,7 +45,7 @@ const MonitoringBuku = () => {
 
   const resetFilters = () => {
     setFilterKategori('');
-    setFilterTahun(''); // reset filter tahun
+    setFilterTahun(''); 
     setSearchTerm('');
     setCurrentPage(1);
   };

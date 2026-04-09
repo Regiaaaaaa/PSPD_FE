@@ -57,7 +57,7 @@ const VerifikasiPeminjaman = () => {
     }
   };
 
-  // ─── Handlers ───────────────────────────────────────────────
+  // Handlers
   const handleDetailClick = (item) => {
     setSelectedTransaksi(item);
     setShowDetailModal(true);
@@ -113,7 +113,7 @@ const VerifikasiPeminjaman = () => {
     }
   };
 
-  // ─── Helpers ─────────────────────────────────────────────────
+  // Helpers
   const getRole = (item) => {
     if (item.user?.siswa) return 'siswa';
     if (item.user?.staff) return 'staff';
@@ -160,7 +160,7 @@ const VerifikasiPeminjaman = () => {
 
   const hasActiveFilter = searchTerm || filterTingkat !== 'all' || filterJurusan !== 'all' || filterKelas !== 'all'
 
-  // ─── Filter ──────────────────────────────────────────────────
+  // Filter
   const filteredTransaksi = transaksi
     .filter((item) => {
       if (activeTab === 'siswa') return !!item.user?.siswa;
@@ -313,7 +313,7 @@ const VerifikasiPeminjaman = () => {
           </div>
           ) : (
             <>
-              {/* ── Table View ── */}
+              {/* Table View */}
               <div className="overflow-x-auto">
                 <table className="table w-full">
                   <thead>
@@ -346,7 +346,7 @@ const VerifikasiPeminjaman = () => {
                           </p>
                         </td>
 
-                        {/* Kolom dinamis kelas/jabatan */}
+                        {/* Kelas/jabatan */}
                         {activeTab === 'siswa' && (
                           <td className="text-sm text-gray-600">{getSubInfo(item)}</td>
                         )}
@@ -410,7 +410,7 @@ const VerifikasiPeminjaman = () => {
         </div>
       </div>
 
-      {/* ══ Detail Modal ══ */}
+      {/* Detail Modal */}
       {showDetailModal && (
         <DetailVerifikasiModal
           isOpen={showDetailModal}
@@ -427,7 +427,7 @@ const VerifikasiPeminjaman = () => {
         />
       )}
 
-      {/* ══ Modal Approve ══ */}
+      {/* Modal Approve */}
       <ConfirmModal
         isOpen={showApproveModal}
         onClose={() => { setShowApproveModal(false); setSelectedApprove(null); }}
@@ -457,7 +457,7 @@ const VerifikasiPeminjaman = () => {
         }
       />
 
-      {/* ══ Modal Reject ══ */}
+      {/* Modal Reject */}
       {showRejectModal && selectedReject && (
         <div className="modal modal-open">
           <div className="modal-box w-11/12 max-w-md">

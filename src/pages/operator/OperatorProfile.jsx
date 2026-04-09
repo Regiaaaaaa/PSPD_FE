@@ -62,7 +62,7 @@ export default function OperatorProfile() {
           {/* Card */}
           <div className="bg-white rounded-xl shadow-sm">
             <div className="tabs tabs-lift px-4 pt-3">
-              {/* ================= PROFILE ================= */}
+              {/* Profile */}
               <input
                 type="radio"
                 name="profile_tabs"
@@ -117,7 +117,7 @@ export default function OperatorProfile() {
                 </form>
               </div>
 
-              {/* ================= SECURITY ================= */}
+              {/* Security */}
               <input
                 type="radio"
                 name="profile_tabs"
