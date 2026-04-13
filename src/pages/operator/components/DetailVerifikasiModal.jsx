@@ -38,7 +38,7 @@ const DetailVerifikasiModal = ({
 
         <div className="px-4 py-4 space-y-4">
 
-             {/* Status Banner */}
+          {/* Status Banner */}
           <div className={`flex items-center gap-2 rounded-lg p-3 border ${
             stokOk
               ? 'bg-green-50 border-green-200'
@@ -88,7 +88,6 @@ const DetailVerifikasiModal = ({
             <div className="bg-gray-50 rounded-lg px-3 py-1">
               <Row label="Judul" value={t.buku?.judul || '-'} />
               <Row label="ISBN" value={t.buku?.isbn || '-'} />
-              <Row label="Jumlah" value={`${t.jumlah || 1} buku`} />
             </div>
           </div>
 
@@ -99,6 +98,19 @@ const DetailVerifikasiModal = ({
               <Row label="Deadline" value={formatDate(t.tgl_deadline)} />
             </div>
           </div>
+
+          {/* Kepentingan */}
+          <div>
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Kepentingan</p>
+            <div className="bg-gray-50 rounded-lg px-3 py-2">
+              {t.kepentingan ? (
+                <p className="text-xs text-gray-700 leading-relaxed">{t.kepentingan}</p>
+              ) : (
+                <p className="text-xs text-gray-400 italic">Tidak ada keterangan</p>
+              )}
+            </div>
+          </div>
+
         </div>
 
         {/* Footer */}

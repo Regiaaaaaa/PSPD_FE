@@ -39,10 +39,10 @@ function LandingPage() {
           <div className="text-center mb-8 sm:mb-10 max-w-3xl mx-auto">
             <div className="inline-flex items-center gap-2 bg-blue-50 text-blue-600 px-3 py-1.5 rounded-full text-xs sm:text-sm font-medium mb-4">
               <span className="w-2 h-2 bg-blue-600 rounded-full animate-pulse"></span>
-              Portal Resmi Perputakaan Sekolah Digital Taruna Bhakti
+              Portal Resmi Peminjaman Buku Sekolah Digital Taruna Bhakti
             </div>
             <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-900 mb-3 leading-tight">
-              Portal Perpustakaan Digital
+              Portal Peminjaman Buku 
             </h1>
             <p className="text-sm sm:text-base md:text-lg text-gray-600 leading-relaxed max-w-2xl mx-auto">
              Kelola peminjaman buku perpustakaan sekolah dengan sistem digital yang mudah, cepat, dan efisien.
@@ -74,7 +74,7 @@ function LandingPage() {
             </div>
           </div>
 
-          {/* Stats Section - Smaller Cards */}
+          {/* Stats Section */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 max-w-2xl mx-auto mb-8 sm:mb-10">
             {/* Card 1 */}
             <div className="group bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-md p-4 text-center transition-all duration-300 hover:-translate-y-0.5">

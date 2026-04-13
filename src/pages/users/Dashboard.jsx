@@ -9,9 +9,6 @@ const MONTHS = [
 
 const now = new Date();
 const YEARS = Array.from({ length: 5 }, (_, i) => now.getFullYear() - i);
-
-// ─── Shared primitives ───────────────────────────────────────────────────────
-
 const KpiCard = ({ label, value, sub, accentColor, delay = 0 }) => (
   <div style={{
     background: "#fff",
@@ -136,8 +133,6 @@ const WarningPillCard = ({
     </span>
   </div>
 );
-
-// ─── Page ────────────────────────────────────────────────────────────────────
 
 export default function DashboardUser() {
   const [data, setData]       = useState(null);
@@ -272,6 +267,7 @@ export default function DashboardUser() {
                 <StatRow label="Menunggu persetujuan" value={data.menunggu_persetujuan} color="#EF9F27" total={total} />
                 <StatRow label="Ditolak"              value={data.ditolak}              color="#E24B4A" total={total} />
                 <StatRow label="Dibatalkan"           value={data.dibatalkan}           color="#888780" total={total} />
+                
               </Panel>
 
               <Panel title="Rekap denda saya">

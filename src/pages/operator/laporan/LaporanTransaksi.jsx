@@ -36,22 +36,16 @@ const YEARS = Array.from({ length: 5 }, (_, i) => currentYear - i);
 
 const STATUS_OPTIONS = [
   { value: "", label: "Semua Status" },
-  { value: "dipinjam", label: "Dipinjam" },
   { value: "kembali", label: "Kembali" },
   { value: "ditolak", label: "Ditolak" },
-  { value: "dibatalkan", label: "Dibatalkan" },
 ];
 
 const statusBadge = (status) => {
   switch (status) {
-    case "dipinjam":
-      return <span className="badge badge-warning badge-sm">Dipinjam</span>;
     case "kembali":
       return <span className="badge badge-success badge-sm">Kembali</span>;
     case "ditolak":
       return <span className="badge badge-error badge-sm">Ditolak</span>;
-    case "dibatalkan":
-      return <span className="badge badge-ghost badge-sm text-gray-500">Dibatalkan</span>;
     default:
       return <span className="badge badge-ghost badge-sm">{status || "-"}</span>;
   }
@@ -86,7 +80,11 @@ export default function LaporanTransaksi() {
       const params = { bulan: b, tahun: t };
       if (s) params.status = s;
       const res = await getLaporanTransaksi(params);
-      setData(res.data || []);
+      // double safety filter frontend
+      const valid = (res.data || []).filter(
+        (item) => item.status === "kembali" || item.status === "ditolak"
+      );
+      setData(valid);
     } catch (err) {
       toast.error(err.message || "Gagal memuat laporan transaksi");
     } finally {

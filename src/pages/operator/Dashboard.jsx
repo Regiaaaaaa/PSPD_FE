@@ -10,7 +10,6 @@ const MONTHS = [
 const now = new Date();
 const YEARS = Array.from({ length: 5 }, (_, i) => now.getFullYear() - i);
 
-
 const KpiCard = ({ label, value, sub, accentColor, delay = 0 }) => (
   <div style={{
     background: "#fff",
@@ -74,68 +73,6 @@ const DendaItem = ({ label, value, bg, color }) => (
   </div>
 );
 
-const IconClock = ({ color }) => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-    <circle cx="12" cy="12" r="9" stroke={color} strokeWidth="1.8" />
-    <path d="M12 7v5l3 3" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-  </svg>
-);
-
-const IconReceipt = ({ color }) => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-    <path d="M6 2h12a1 1 0 0 1 1 1v18l-3-2-3 2-3-2-3 2V3a1 1 0 0 1 1-1z" stroke={color} strokeWidth="1.8" strokeLinejoin="round" />
-    <path d="M9 8h6M9 12h4" stroke={color} strokeWidth="1.8" strokeLinecap="round" />
-  </svg>
-);
-
-const WarningPillCard = ({
-  icon, label, value, active,
-  accentBg, accentBorder, accentIcon,
-  accentBadgeBg, accentValueText, delay,
-}) => (
-  <div style={{
-    flex: 1, minWidth: 180,
-    display: "flex", alignItems: "center", gap: 12,
-    background: active ? accentBg : "#F1EFE8",
-    border: `0.5px solid ${active ? accentBorder : "#D3D1C7"}`,
-    borderRadius: 12, padding: "12px 16px",
-    animation: "fadeUp 0.35s ease both",
-    animationDelay: `${delay}ms`,
-    transition: "background 0.2s, border-color 0.2s",
-  }}>
-    <div style={{
-      width: 36, height: 36, borderRadius: 10,
-      background: active ? accentBadgeBg : "#D3D1C7",
-      display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
-    }}>
-      {icon(active ? accentIcon : "#888780")}
-    </div>
-    <div style={{ flex: 1 }}>
-      <div style={{
-        fontSize: 11, fontWeight: 500,
-        color: active ? accentIcon : "#5F5E5A",
-        textTransform: "uppercase", letterSpacing: "0.4px", marginBottom: 2,
-      }}>
-        {label}
-      </div>
-      <div style={{ display: "flex", alignItems: "baseline", gap: 4 }}>
-        <span style={{ fontSize: 24, fontWeight: 500, color: active ? accentValueText : "#444441", lineHeight: 1 }}>
-          {value ?? 0}
-        </span>
-        <span style={{ fontSize: 12, color: active ? accentIcon : "#888780" }}>item</span>
-      </div>
-    </div>
-    <span style={{
-      fontSize: 11, fontWeight: 500,
-      color: active ? accentIcon : "#5F5E5A",
-      background: active ? accentBadgeBg : "#D3D1C7",
-      padding: "3px 9px", borderRadius: 20, flexShrink: 0,
-    }}>
-      {active ? "Perlu tindakan" : "Aman"}
-    </span>
-  </div>
-);
-
 export default function DashboardOperator() {
   const [data, setData]       = useState(null);
   const [loading, setLoading] = useState(true);
@@ -153,7 +90,6 @@ export default function DashboardOperator() {
   };
 
   useEffect(() => { fetchData(bulan, tahun); }, [bulan, tahun]);
-
   const total = data?.total_transaksi || 1;
 
   return (
@@ -173,15 +109,9 @@ export default function DashboardOperator() {
           grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
           gap: 10px; margin-bottom: 12px;
         }
-        .warning-grid {
-          display: grid;
-          grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-          gap: 10px; margin-bottom: 12px;
-        }
         @media (max-width: 860px) {
-          .kpi-grid     { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-          .mid-grid     { grid-template-columns: 1fr; }
-          .warning-grid { grid-template-columns: 1fr; }
+          .kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+          .mid-grid { grid-template-columns: 1fr; }
         }
         @media (max-width: 480px) {
           .kpi-grid { grid-template-columns: 1fr 1fr; }
@@ -201,51 +131,28 @@ export default function DashboardOperator() {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1.5">Bulan</label>
-              <select
-                className="select select-bordered w-full bg-white text-sm"
-                value={bulan}
-                onChange={(e) => setBulan(Number(e.target.value))}
-                disabled={loading}
-              >
-                {MONTHS.map((m, i) => (
-                  <option key={i + 1} value={i + 1}>{m}</option>
-                ))}
+              <select className="select select-bordered w-full bg-white text-sm" value={bulan} onChange={(e) => setBulan(Number(e.target.value))} disabled={loading}>
+                {MONTHS.map((m, i) => <option key={i + 1} value={i + 1}>{m}</option>)}
               </select>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1.5">Tahun</label>
-              <select
-                className="select select-bordered w-full bg-white text-sm"
-                value={tahun}
-                onChange={(e) => setTahun(Number(e.target.value))}
-                disabled={loading}
-              >
-                {YEARS.map((y) => (
-                  <option key={y} value={y}>{y}</option>
-                ))}
+              <select className="select select-bordered w-full bg-white text-sm" value={tahun} onChange={(e) => setTahun(Number(e.target.value))} disabled={loading}>
+                {YEARS.map((y) => <option key={y} value={y}>{y}</option>)}
               </select>
             </div>
           </div>
         </div>
 
-        {/* Error */}
-        {error && (
-          <div className="alert alert-error mb-4 text-sm">
-            <span>⚠️ {error}</span>
-          </div>
-        )}
-
-        {/* Loading awal */}
+        {error && <div className="alert alert-error mb-4 text-sm"><span>⚠️ {error}</span></div>}
         {loading && !data && (
           <div className="flex items-center gap-3 text-gray-500 py-12 text-sm">
-            <span className="loading loading-spinner loading-md" />
-            Memuat dashboard…
+            <span className="loading loading-spinner loading-md" /> Memuat dashboard…
           </div>
         )}
 
         {data && (
           <>
-            {/* Label periode */}
             <div className="flex items-center gap-2 mb-3">
               <p className="text-xs text-gray-400">
                 Data transaksi — {MONTHS[data.filter.bulan - 1]} {data.filter.tahun}
@@ -255,31 +162,30 @@ export default function DashboardOperator() {
 
             {/* KPI */}
             <div className="kpi-grid">
-              <KpiCard label="Total transaksi"        value={data.total_transaksi}         sub="bulan ini"       accentColor="#378ADD" delay={0}   />
-              <KpiCard label="Sedang dipinjam"        value={data.sedang_dipinjam}         sub="aktif"           accentColor="#1D9E75" delay={60}  />
-              <KpiCard label="Pengembalian bulan ini" value={data.pengembalian_bulan_ini}  sub="selesai"         accentColor="#639922" delay={120} />
-              <KpiCard label="Menunggu persetujuan"   value={data.menunggu_persetujuan}    sub="perlu diproses"  accentColor="#EF9F27" delay={180} />
+              <KpiCard label="Total transaksi"        value={data.total_transaksi}        sub="bulan ini"      accentColor="#378ADD" delay={0}   />
+              <KpiCard label="Sedang dipinjam"        value={data.sedang_dipinjam}        sub="aktif"          accentColor="#1D9E75" delay={60}  />
+              <KpiCard label="Pengembalian bulan ini" value={data.pengembalian_bulan_ini} sub="selesai"        accentColor="#639922" delay={120} />
+              <KpiCard label="Menunggu persetujuan"   value={data.menunggu_persetujuan}   sub="perlu diproses" accentColor="#EF9F27" delay={180} />
             </div>
 
-            {/* Rekap denda*/}
             <div className="mid-grid">
+              {/* Rincian status transaksi */}
               <Panel title="Rincian status transaksi">
                 <StatRow label="Sedang dipinjam"        value={data.sedang_dipinjam}        color="#378ADD" total={total} />
                 <StatRow label="Pengembalian bulan ini" value={data.pengembalian_bulan_ini} color="#1D9E75" total={total} />
                 <StatRow label="Menunggu persetujuan"   value={data.menunggu_persetujuan}   color="#EF9F27" total={total} />
                 <StatRow label="Ditolak"                value={data.total_ditolak}          color="#E24B4A" total={total} />
-                <StatRow label="Dibatalkan"             value={data.total_dibatalkan}       color="#888780" total={total} />
               </Panel>
 
               <Panel title="Rekap denda">
-                <DendaItem label="Total denda"  value={data.total_denda}        bg="#E6F1FB" color="#185FA5" />
+                <DendaItem label="Total denda"  value={data.total_denda}       bg="#E6F1FB" color="#185FA5" />
                 <DendaItem
                   label="Belum lunas"
                   value={data.denda_belum_lunas}
                   bg={data.denda_belum_lunas > 0 ? "#FAECE7" : "#F1EFE8"}
                   color={data.denda_belum_lunas > 0 ? "#993C1D" : "#5F5E5A"}
                 />
-                <DendaItem label="Sudah lunas"  value={data.denda_lunas}        bg="#E1F5EE" color="#0F6E56" />
+                <DendaItem label="Sudah lunas"  value={data.denda_lunas}       bg="#E1F5EE" color="#0F6E56" />
               </Panel>
             </div>
           </>

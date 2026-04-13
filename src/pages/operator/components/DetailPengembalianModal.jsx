@@ -79,7 +79,6 @@ const DetailPengembalianModal = ({
             <div className="bg-gray-50 rounded-lg px-3 py-1">
               <Row label="Judul" value={t.buku?.judul || '-'} />
               <Row label="ISBN" value={t.buku?.isbn || '-'} />
-              <Row label="Jumlah" value={`${t.jumlah} buku`} />
             </div>
           </div>
 

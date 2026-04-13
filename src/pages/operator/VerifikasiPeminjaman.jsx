@@ -323,7 +323,6 @@ const VerifikasiPeminjaman = () => {
                       {activeTab === 'siswa' && <th className="font-semibold text-gray-700">Kelas</th>}
                       {activeTab === 'staff' && <th className="font-semibold text-gray-700">Jabatan</th>}
                       <th className="font-semibold text-gray-700">Buku</th>
-                      <th className="w-20 text-center font-semibold text-gray-700">Jumlah</th>
                       <th className="w-32 text-center font-semibold text-gray-700">Tgl Deadline</th>
                       <th className="w-32 text-center font-semibold text-gray-700">Aksi</th>
                     </tr>
@@ -359,8 +358,6 @@ const VerifikasiPeminjaman = () => {
                           <p className="font-medium text-gray-800 text-sm line-clamp-1">{item.buku?.judul || '-'}</p>
                           <p className="text-xs text-gray-400">{item.buku?.isbn || ''}</p>
                         </td>
-
-                        <td className="text-center">{item.jumlah || 1}</td>
                         <td className="text-center text-sm text-gray-600">{formatDate(item.tgl_deadline)}</td>
 
                         {/* Aksi */}
@@ -444,7 +441,6 @@ const VerifikasiPeminjaman = () => {
                 <p className="text-sm"><span className="font-semibold">Peminjam:</span> {getNama(selectedApprove)}</p>
                 <p className="text-sm"><span className="font-semibold">{getSubInfoLabel(selectedApprove)}:</span> {getSubInfo(selectedApprove)}</p>
                 <p className="text-sm"><span className="font-semibold">Buku:</span> {selectedApprove.buku?.judul || '-'}</p>
-                <p className="text-sm"><span className="font-semibold">Jumlah:</span> {selectedApprove.jumlah || 1} buku</p>
                 <p className="text-sm">
                   <span className="font-semibold">Stok Tersedia:</span>{' '}
                   <span className={selectedApprove.buku?.stok_tersedia > 0 ? 'text-green-600 font-bold' : 'text-red-600 font-bold'}>
@@ -466,7 +462,6 @@ const VerifikasiPeminjaman = () => {
               <p className="text-sm"><span className="font-semibold">Peminjam:</span> {getNama(selectedReject)}</p>
               <p className="text-sm"><span className="font-semibold">{getSubInfoLabel(selectedReject)}:</span> {getSubInfo(selectedReject)}</p>
               <p className="text-sm"><span className="font-semibold">Buku:</span> {selectedReject.buku?.judul || '-'}</p>
-              <p className="text-sm"><span className="font-semibold">Jumlah:</span> {selectedReject.jumlah || 1} buku</p>
             </div>
             <div className="form-control w-full mb-2">
               <label className="label pb-1">

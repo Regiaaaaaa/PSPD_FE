@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
-import { BookOpen, Clock, CheckCircle, XCircle, AlertTriangle, Search, X, MessageSquare, Info } from 'lucide-react';
+import { BookOpen, Clock, CheckCircle, XCircle, AlertTriangle, Info } from 'lucide-react';
 import { getMyTransaksi, cancelTransaksi } from '../../services/users/transaksiService';
 import AppLayout from '../../components/AppLayout';
 import Pagination from '../../components/common/Pagination';
@@ -13,22 +13,15 @@ const PeminjamanSaya = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
 
-  // Cancel confirm modal
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [selectedTransaksi, setSelectedTransaksi] = useState(null);
   const [cancelLoading, setCancelLoading] = useState(false);
 
-  // Modal pesan ditolak
   const [showPesanModal, setShowPesanModal] = useState(false);
   const [selectedPesan, setSelectedPesan] = useState(null);
 
-  useEffect(() => {
-    fetchTransaksi();
-  }, []);
-
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [searchTerm, filterStatus]);
+  useEffect(() => { fetchTransaksi(); }, []);
+  useEffect(() => { setCurrentPage(1); }, [searchTerm, filterStatus]);
 
   const fetchTransaksi = async () => {
     setLoading(true);
@@ -42,52 +35,32 @@ const PeminjamanSaya = () => {
     }
   };
 
-  // ─── Helpers ────────────────────────────────────
   const getCoverUrl = (coverPath) => {
     if (!coverPath) return null;
     if (coverPath.startsWith('http')) return coverPath;
     return coverPath.startsWith('storage/') ? `/${coverPath}` : `/storage/${coverPath}`;
   };
 
-  // Status sesuai enum migration: menunggu, dipinjam, kembali, ditolak, dibatalkan
+  const formatRupiah = (nominal) => {
+    if (!nominal || nominal === 0) return null;
+    return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(nominal);
+  };
+
   const statusConfig = {
-    menunggu: {
-      label: 'Menunggu',
-      badge: 'badge-warning',
-      icon: <Clock size={14} />,
-    },
-    dipinjam: {
-      label: 'Dipinjam',
-      badge: 'badge-info',
-      icon: <BookOpen size={14} />,
-    },
-    kembali: {
-      label: 'Dikembalikan',
-      badge: 'badge-success',
-      icon: <CheckCircle size={14} />,
-    },
-    ditolak: {
-      label: 'Ditolak',
-      badge: 'badge-error',
-      icon: <XCircle size={14} />,
-    },
-    dibatalkan: {
-      label: 'Dibatalkan',
-      badge: 'badge-ghost',
-      icon: <XCircle size={14} />,
-    },
+    menunggu:   { label: 'Menunggu',      badge: 'badge-warning', icon: <Clock size={14} /> },
+    dipinjam:   { label: 'Dipinjam',      badge: 'badge-info',    icon: <BookOpen size={14} /> },
+    kembali:    { label: 'Dikembalikan',  badge: 'badge-success', icon: <CheckCircle size={14} /> },
+    ditolak:    { label: 'Ditolak',       badge: 'badge-error',   icon: <XCircle size={14} /> },
+    dibatalkan: { label: 'Dibatalkan',    badge: 'badge-ghost',   icon: <XCircle size={14} /> },
   };
 
   const getStatusInfo = (status) => statusConfig[status] || {
-    label: status || 'Unknown',
-    badge: 'badge-ghost',
-    icon: <Clock size={14} />,
+    label: status || 'Unknown', badge: 'badge-ghost', icon: <Clock size={14} />,
   };
 
   const formatDate = (dateStr) => {
     if (!dateStr) return '-';
-    const options = { year: 'numeric', month: 'short', day: 'numeric' };
-    return new Date(dateStr).toLocaleDateString('id-ID', options);
+    return new Date(dateStr).toLocaleDateString('id-ID', { year: 'numeric', month: 'short', day: 'numeric' });
   };
 
   const hasActiveFilter = searchTerm || filterStatus;
@@ -98,7 +71,6 @@ const PeminjamanSaya = () => {
     setCurrentPage(1);
   };
 
-  // ─── Filter client-side ─────────────────────────
   const filteredTransaksi = transaksi.filter((t) => {
     const matchSearch =
       t.buku?.judul?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -107,7 +79,6 @@ const PeminjamanSaya = () => {
     return matchSearch && matchStatus;
   });
 
-  // ─── Pagination ─────────────────────────────────
   const totalPages = Math.ceil(filteredTransaksi.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const paginatedTransaksi = filteredTransaksi.slice(startIndex, startIndex + itemsPerPage);
@@ -116,16 +87,8 @@ const PeminjamanSaya = () => {
     if (page >= 1 && page <= totalPages) setCurrentPage(page);
   };
 
-  // ─── Cancel Logic ───────────────────────────────
-  const openCancelModal = (t) => {
-    setSelectedTransaksi(t);
-    setShowCancelModal(true);
-  };
-
-  const closeCancelModal = () => {
-    setShowCancelModal(false);
-    setSelectedTransaksi(null);
-  };
+  const openCancelModal = (t) => { setSelectedTransaksi(t); setShowCancelModal(true); };
+  const closeCancelModal = () => { setShowCancelModal(false); setSelectedTransaksi(null); };
 
   const handleCancel = async () => {
     setCancelLoading(true);
@@ -143,40 +106,35 @@ const PeminjamanSaya = () => {
     }
   };
 
-  // ─── Pesan Modal Logic ──────────────────────────
   const openPesanModal = (t) => {
-    setSelectedPesan({
-      judul: t.buku?.judul,
-      pesan: t.pesan_ditolak,
-    });
+    setSelectedPesan({ judul: t.buku?.judul, pesan: t.pesan_ditolak });
     setShowPesanModal(true);
   };
-
-  const closePesanModal = () => {
-    setShowPesanModal(false);
-    setSelectedPesan(null);
+  const closePesanModal = () => { setShowPesanModal(false); setSelectedPesan(null); };
+  const DendaBadge = ({ nominal }) => {
+    const formatted = formatRupiah(nominal);
+    if (!formatted) return <span className="text-xs text-gray-400">—</span>;
+    return (
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-red-50 text-red-600 text-xs font-semibold border border-red-200">
+        ⚠️ {formatted}
+      </span>
+    );
   };
 
-  // ─── Render ─────────────────────────────────────
   return (
     <AppLayout>
       <div className="p-3 sm:p-4 lg:p-6 max-w-7xl mx-auto">
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-6">
           <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 flex items-center gap-3">
-              Peminjaman Saya
-            </h1>
-            <p className="text-sm text-gray-60 mt-2">
-              Lihat dan kelola riwayat peminjaman Anda
-            </p>
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Peminjaman Saya</h1>
+            <p className="text-sm text-gray-500 mt-2">Lihat dan kelola riwayat peminjaman Anda</p>
           </div>
         </div>
 
         {/* Filter */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-6">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            {/* Filter Status — sesuai enum */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1.5">Status</label>
               <select
@@ -193,13 +151,8 @@ const PeminjamanSaya = () => {
               </select>
             </div>
           </div>
-
-          {/* Reset Button - Always Show */}
           <div className="mt-4">
-            <button
-              className="btn btn-ghost border border-gray-300 hover:bg-gray-50"
-              onClick={resetFilters}
-            >
+            <button className="btn btn-ghost border border-gray-300 hover:bg-gray-50" onClick={resetFilters}>
               Reset
             </button>
           </div>
@@ -207,18 +160,11 @@ const PeminjamanSaya = () => {
 
         {/* Table / Card */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-          {/* Entries per page & Search - Using Pagination Component */}
           {Pagination({
-            currentPage,
-            totalPages,
-            itemsPerPage,
-            totalItems: filteredTransaksi.length,
-            searchTerm,
+            currentPage, totalPages, itemsPerPage,
+            totalItems: filteredTransaksi.length, searchTerm,
             onPageChange: goToPage,
-            onItemsPerPageChange: (value) => {
-              setItemsPerPage(value);
-              setCurrentPage(1);
-            },
+            onItemsPerPageChange: (value) => { setItemsPerPage(value); setCurrentPage(1); },
             onSearchChange: setSearchTerm,
           }).TopControls()}
 
@@ -238,7 +184,7 @@ const PeminjamanSaya = () => {
             </div>
           ) : (
             <>
-              {/* ── Mobile Card View ── */}
+              {/* Mobile Card View */}
               <div className="block lg:hidden">
                 <div className="divide-y divide-gray-100">
                   {paginatedTransaksi.map((t) => {
@@ -251,8 +197,7 @@ const PeminjamanSaya = () => {
                           <div className="flex-shrink-0">
                             {coverUrl ? (
                               <img
-                                src={coverUrl}
-                                alt={t.buku?.judul}
+                                src={coverUrl} alt={t.buku?.judul}
                                 className="w-14 h-20 sm:w-16 sm:h-22 object-cover rounded"
                                 onError={(e) => { e.target.style.display = 'none'; }}
                               />
@@ -276,13 +221,18 @@ const PeminjamanSaya = () => {
                             <p className="text-xs text-gray-500 mt-0.5">{t.buku?.penulis || '-'}</p>
 
                             <div className="flex flex-wrap gap-x-3 gap-y-1 mt-2 text-xs text-gray-500">
-                              <span>Jumlah: <span className="font-semibold text-gray-700">{t.jumlah}</span></span>
                               <span>Deadline: <span className="font-semibold text-gray-700">{formatDate(t.tgl_deadline)}</span></span>
                             </div>
 
+                            {/* Denda Berjalan */}
+                            {t.denda_berjalan > 0 && (
+                              <div className="mt-2">
+                                <DendaBadge nominal={t.denda_berjalan} />
+                              </div>
+                            )}
+
                             {/* Action Buttons */}
                             <div className="mt-2 flex gap-2">
-                              {/* Batalkan — cuma kalau menunggu */}
                               {t.status === 'menunggu' && (
                                 <button
                                   className="btn btn-xs bg-red-50 text-red-600 hover:bg-red-100 border-red-200"
@@ -291,8 +241,6 @@ const PeminjamanSaya = () => {
                                   <XCircle size={13} /> Batalkan
                                 </button>
                               )}
-
-                              {/* Lihat Keterangan — kalau ditolak dan ada pesan */}
                               {t.status === 'ditolak' && t.pesan_ditolak && (
                                 <button
                                   className="btn btn-xs bg-blue-50 text-blue-600 hover:bg-blue-100 border-blue-200"
@@ -310,7 +258,7 @@ const PeminjamanSaya = () => {
                 </div>
               </div>
 
-              {/* ── Desktop Table View ── */}
+              {/* Desktop Table View */}
               <div className="hidden lg:block overflow-x-auto">
                 <table className="table w-full">
                   <thead>
@@ -319,9 +267,9 @@ const PeminjamanSaya = () => {
                       <th className="w-20 font-semibold text-gray-700">Cover</th>
                       <th className="font-semibold text-gray-700">Judul Buku</th>
                       <th className="font-semibold text-gray-700">Penulis</th>
-                      <th className="w-20 text-center font-semibold text-gray-700">Jumlah</th>
                       <th className="w-32 text-center font-semibold text-gray-700">Deadline</th>
                       <th className="w-28 text-center font-semibold text-gray-700">Status</th>
+                      <th className="w-36 text-center font-semibold text-gray-700">Denda Berjalan</th>
                       <th className="w-32 text-center font-semibold text-gray-700">Pesan Penolakan</th>
                       <th className="w-28 text-center font-semibold text-gray-700">Aksi</th>
                     </tr>
@@ -330,15 +278,13 @@ const PeminjamanSaya = () => {
                     {paginatedTransaksi.map((t, index) => {
                       const coverUrl = getCoverUrl(t.buku?.cover);
                       const status = getStatusInfo(t.status);
-
                       return (
                         <tr key={t.id} className="border-b border-gray-100 hover:bg-gray-50/50 transition-colors">
                           <td>{startIndex + index + 1}</td>
                           <td>
                             {coverUrl ? (
                               <img
-                                src={coverUrl}
-                                alt={t.buku?.judul}
+                                src={coverUrl} alt={t.buku?.judul}
                                 className="w-12 h-16 object-cover rounded"
                                 onError={(e) => { e.target.style.display = 'none'; }}
                               />
@@ -350,13 +296,18 @@ const PeminjamanSaya = () => {
                           </td>
                           <td className="font-medium text-gray-800">{t.buku?.judul || '-'}</td>
                           <td className="text-gray-600">{t.buku?.penulis || '-'}</td>
-                          <td className="text-center font-semibold">{t.jumlah}</td>
                           <td className="text-center text-sm text-gray-600">{formatDate(t.tgl_deadline)}</td>
                           <td className="text-center">
                             <span className={`badge ${status.badge} badge-sm flex items-center gap-1 mx-auto`}>
                               {status.icon} {status.label}
                             </span>
                           </td>
+
+                          {/* Denda Berjalan */}
+                          <td className="text-center">
+                            <DendaBadge nominal={t.denda_berjalan} />
+                          </td>
+
                           <td className="text-center">
                             {t.status === 'ditolak' && t.pesan_ditolak ? (
                               <button
@@ -390,25 +341,18 @@ const PeminjamanSaya = () => {
                 </table>
               </div>
 
-              {/* Pagination Bottom */}
               {Pagination({
-                currentPage,
-                totalPages,
-                itemsPerPage,
-                totalItems: filteredTransaksi.length,
-                searchTerm,
+                currentPage, totalPages, itemsPerPage,
+                totalItems: filteredTransaksi.length, searchTerm,
                 onPageChange: goToPage,
-                onItemsPerPageChange: (value) => {
-                  setItemsPerPage(value);
-                  setCurrentPage(1);
-                },
+                onItemsPerPageChange: (value) => { setItemsPerPage(value); setCurrentPage(1); },
                 onSearchChange: setSearchTerm,
               }).BottomControls()}
             </>
           )}
         </div>
 
-        {/* ─── Modal Konfirmasi Cancel ──────────────── */}
+        {/* Modal Konfirmasi Cancel */}
         {showCancelModal && selectedTransaksi && (
           <div className="modal modal-open">
             <div className="modal-box w-11/12 max-w-sm p-4 sm:p-6">
@@ -418,7 +362,6 @@ const PeminjamanSaya = () => {
                 </div>
                 <h3 className="font-bold text-sm sm:text-base text-gray-800">Batalkan Peminjaman?</h3>
               </div>
-
               <p className="text-xs sm:text-sm text-gray-600 mb-1">
                 Anda akan membatalkan pengajuan peminjaman buku:
               </p>
@@ -426,7 +369,6 @@ const PeminjamanSaya = () => {
                 "{selectedTransaksi.buku?.judul}"
               </p>
               <p className="text-xs text-gray-400">Tindakan ini tidak dapat diulang kembali.</p>
-
               <div className="modal-action mt-5 flex-col sm:flex-row gap-2">
                 <button
                   type="button"
@@ -441,11 +383,7 @@ const PeminjamanSaya = () => {
                   onClick={handleCancel}
                   disabled={cancelLoading}
                 >
-                  {cancelLoading ? (
-                    <span className="loading loading-spinner loading-xs"></span>
-                  ) : (
-                    'Ya, Batalkan'
-                  )}
+                  {cancelLoading ? <span className="loading loading-spinner loading-xs"></span> : 'Ya, Batalkan'}
                 </button>
               </div>
             </div>
@@ -453,27 +391,21 @@ const PeminjamanSaya = () => {
           </div>
         )}
 
-        {/* ─── Modal Pesan Ditolak ───────────────────── */}
+        {/* Modal Pesan Ditolak */}
         {showPesanModal && selectedPesan && (
           <div className="modal modal-open">
             <div className="modal-box w-11/12 max-w-md p-4 sm:p-6">
               <div className="flex items-start gap-3 mb-4">
                 <div className="flex-1">
-                  <h3 className="font-bold text-base sm:text-lg text-gray-800 mb-1">
-                    Alasan Penolakan
-                  </h3>
+                  <h3 className="font-bold text-base sm:text-lg text-gray-800 mb-1">Alasan Penolakan</h3>
                   <p className="text-xs sm:text-sm text-gray-500">
                     Peminjaman buku "{selectedPesan.judul}"
                   </p>
                 </div>
               </div>
-
               <div className="p-3 sm:p-4">
-                <p className="text-sm text-gray-700 leading-relaxed">
-                  {selectedPesan.pesan}
-                </p>
+                <p className="text-sm text-gray-700 leading-relaxed">{selectedPesan.pesan}</p>
               </div>
-
               <div className="modal-action mt-5">
                 <button
                   type="button"

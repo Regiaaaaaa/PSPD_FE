@@ -10,11 +10,11 @@ import {
   RefreshCw,
   Calendar,
   TrendingUp,
-  BookOpen,
   CheckCircle,
   Clock,
   DollarSign,
   ChevronRight,
+  XCircle,
 } from "lucide-react";
 import AppLayout from "../../../components/AppLayout";
 import {
@@ -73,6 +73,8 @@ export default function LaporanSummary() {
       currency: "IDR",
       minimumFractionDigits: 0,
     }).format(val || 0);
+  const totalTransaksi =
+    (summary?.transaksi?.kembali ?? 0) + (summary?.transaksi?.ditolak ?? 0);
 
   return (
     <AppLayout>
@@ -160,36 +162,25 @@ export default function LaporanSummary() {
               </span>
             </div>
 
-            {/* Stat Cards — Transaksi */}
+            {/* Transaksi */}
             <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
               Transaksi
             </p>
             <div className="grid grid-cols-1 min-[480px]:grid-cols-2 sm:grid-cols-3 gap-3 mb-5">
+              {/* Total */}
               <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-sm p-4 text-white">
                 <div className="flex items-center justify-between gap-3">
                   <div className="min-w-0">
                     <p className="text-xs opacity-90">Total Transaksi</p>
-                    <p className="text-2xl font-bold mt-1">
-                      {summary.transaksi?.total ?? 0}
-                    </p>
+                    <p className="text-2xl font-bold mt-1">{totalTransaksi}</p>
+                    <p className="text-[10px] opacity-70 mt-0.5">Kembali + Ditolak</p>
                   </div>
                   <TrendingUp className="w-8 h-8 opacity-75 flex-shrink-0" />
                 </div>
               </div>
 
-              <div className="bg-gradient-to-br from-amber-500 to-amber-600 rounded-xl shadow-sm p-4 text-white">
-                <div className="flex items-center justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="text-xs opacity-90">Sedang Dipinjam</p>
-                    <p className="text-2xl font-bold mt-1">
-                      {summary.transaksi?.dipinjam ?? 0}
-                    </p>
-                  </div>
-                  <BookOpen className="w-8 h-8 opacity-75 flex-shrink-0" />
-                </div>
-              </div>
-
-              <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl shadow-sm p-4 text-white min-[480px]:col-span-2 sm:col-span-1">
+              {/* Kembali */}
+              <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl shadow-sm p-4 text-white">
                 <div className="flex items-center justify-between gap-3">
                   <div className="min-w-0">
                     <p className="text-xs opacity-90">Sudah Kembali</p>
@@ -200,9 +191,22 @@ export default function LaporanSummary() {
                   <CheckCircle className="w-8 h-8 opacity-75 flex-shrink-0" />
                 </div>
               </div>
+
+              {/* Ditolak */}
+              <div className="bg-gradient-to-br from-red-500 to-red-600 rounded-xl shadow-sm p-4 text-white">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-xs opacity-90">Ditolak</p>
+                    <p className="text-2xl font-bold mt-1">
+                      {summary.transaksi?.ditolak ?? 0}
+                    </p>
+                  </div>
+                  <XCircle className="w-8 h-8 opacity-75 flex-shrink-0" />
+                </div>
+              </div>
             </div>
 
-            {/* Stat Cards — Denda */}
+            {/* Denda */}
             <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
               Denda
             </p>
@@ -266,6 +270,8 @@ export default function LaporanSummary() {
                 </button>
               </div>
             </div>
+
+            {/* Quick links */}
             <div className="grid grid-cols-1 min-[560px]:grid-cols-2 gap-3">
               <Link
                 to="/operator/laporan/transaksi"

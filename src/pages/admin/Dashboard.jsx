@@ -73,90 +73,6 @@ const InventarisItem = ({ label, value, bg, color }) => (
   </div>
 );
 
-// Icon components
-const IconWarning = ({ color }) => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-    <path d="M12 2L2 19h20L12 2z" stroke={color} strokeWidth="1.8" strokeLinejoin="round" />
-    <path d="M12 9v5M12 16.5v.5" stroke={color} strokeWidth="1.8" strokeLinecap="round" />
-  </svg>
-);
-
-const IconReceipt = ({ color }) => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-    <path d="M6 2h12a1 1 0 0 1 1 1v18l-3-2-3 2-3-2-3 2V3a1 1 0 0 1 1-1z" stroke={color} strokeWidth="1.8" strokeLinejoin="round" />
-    <path d="M9 8h6M9 12h4" stroke={color} strokeWidth="1.8" strokeLinecap="round" />
-  </svg>
-);
-
-const WarningPillCard = ({ icon, label, value, active, accentBg, accentBorder, accentIcon, accentBadgeBg, accentBadgeText, accentValueText, delay }) => (
-  <div style={{
-    flex: 1,
-    minWidth: 180,
-    display: "flex",
-    alignItems: "center",
-    gap: 12,
-    background: active ? accentBg : "#F1EFE8",
-    border: `0.5px solid ${active ? accentBorder : "#D3D1C7"}`,
-    borderRadius: 12,
-    padding: "12px 16px",
-    animation: "fadeUp 0.35s ease both",
-    animationDelay: `${delay}ms`,
-    transition: "background 0.2s, border-color 0.2s",
-  }}>
-    {/* Icon box */}
-    <div style={{
-      width: 36,
-      height: 36,
-      borderRadius: 10,
-      background: active ? accentBadgeBg : "#D3D1C7",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      flexShrink: 0,
-    }}>
-      {icon(active ? accentIcon : "#888780")}
-    </div>
-
-    {/* Text */}
-    <div style={{ flex: 1 }}>
-      <div style={{
-        fontSize: 11,
-        fontWeight: 500,
-        color: active ? accentIcon : "#5F5E5A",
-        textTransform: "uppercase",
-        letterSpacing: "0.4px",
-        marginBottom: 2,
-      }}>
-        {label}
-      </div>
-      <div style={{ display: "flex", alignItems: "baseline", gap: 4 }}>
-        <span style={{
-          fontSize: 24,
-          fontWeight: 500,
-          color: active ? accentValueText : "#444441",
-          lineHeight: 1,
-        }}>
-          {value ?? 0}
-        </span>
-        <span style={{ fontSize: 12, color: active ? accentIcon : "#888780" }}>item</span>
-      </div>
-    </div>
-
-    {/* Status badge */}
-    <span style={{
-      fontSize: 11,
-      fontWeight: 500,
-      color: active ? accentIcon : "#5F5E5A",
-      background: active ? accentBadgeBg : "#D3D1C7",
-      padding: "3px 9px",
-      borderRadius: 20,
-      flexShrink: 0,
-    }}>
-      {active ? "Perlu tindakan" : "Aman"}
-    </span>
-  </div>
-);
-
 export default function Dashboard() {
   const [data, setData]       = useState(null);
   const [loading, setLoading] = useState(true);
@@ -173,13 +89,7 @@ export default function Dashboard() {
       .finally(() => setLoading(false));
   };
 
-  useEffect(() => {
-    fetchData(bulan, tahun);
-  }, [bulan, tahun]);
-
-  const handleBulan = (e) => setBulan(Number(e.target.value));
-  const handleTahun = (e) => setTahun(Number(e.target.value));
-
+  useEffect(() => { fetchData(bulan, tahun); }, [bulan, tahun]);
   const total = data?.total_transaksi || 1;
 
   return (
@@ -192,25 +102,16 @@ export default function Dashboard() {
         .kpi-grid {
           display: grid;
           grid-template-columns: repeat(4, minmax(0, 1fr));
-          gap: 10px;
-          margin-bottom: 12px;
+          gap: 10px; margin-bottom: 12px;
         }
         .mid-grid {
           display: grid;
           grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-          gap: 10px;
-          margin-bottom: 12px;
-        }
-        .warning-grid {
-          display: grid;
-          grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-          gap: 10px;
-          margin-bottom: 12px;
+          gap: 10px; margin-bottom: 12px;
         }
         @media (max-width: 860px) {
           .kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
           .mid-grid { grid-template-columns: 1fr; }
-          .warning-grid { grid-template-columns: 1fr; }
         }
         @media (max-width: 480px) {
           .kpi-grid { grid-template-columns: 1fr 1fr; }
@@ -230,49 +131,28 @@ export default function Dashboard() {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1.5">Bulan</label>
-              <select
-                className="select select-bordered w-full bg-white text-sm"
-                value={bulan}
-                onChange={handleBulan}
-                disabled={loading}
-              >
-                {MONTHS.map((m, i) => (
-                  <option key={i + 1} value={i + 1}>{m}</option>
-                ))}
+              <select className="select select-bordered w-full bg-white text-sm" value={bulan} onChange={(e) => setBulan(Number(e.target.value))} disabled={loading}>
+                {MONTHS.map((m, i) => <option key={i + 1} value={i + 1}>{m}</option>)}
               </select>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1.5">Tahun</label>
-              <select
-                className="select select-bordered w-full bg-white text-sm"
-                value={tahun}
-                onChange={handleTahun}
-                disabled={loading}
-              >
-                {YEARS.map((y) => (
-                  <option key={y} value={y}>{y}</option>
-                ))}
+              <select className="select select-bordered w-full bg-white text-sm" value={tahun} onChange={(e) => setTahun(Number(e.target.value))} disabled={loading}>
+                {YEARS.map((y) => <option key={y} value={y}>{y}</option>)}
               </select>
             </div>
           </div>
         </div>
 
-        {/* Error */}
-        {error && (
-          <div className="alert alert-error mb-4 text-sm">
-            <span>⚠️ {error}</span>
-          </div>
-        )}
+        {error && <div className="alert alert-error mb-4 text-sm"><span>⚠️ {error}</span></div>}
         {loading && !data && (
           <div className="flex items-center gap-3 text-gray-500 py-12 text-sm">
-            <span className="loading loading-spinner loading-md" />
-            Memuat dashboard…
+            <span className="loading loading-spinner loading-md" /> Memuat dashboard…
           </div>
         )}
 
         {data && (
           <>
-            {/* Label periode */}
             <div className="flex items-center gap-2 mb-3">
               <p className="text-xs text-gray-400">
                 Data transaksi — {MONTHS[data.filter.bulan - 1]} {data.filter.tahun}
@@ -288,23 +168,22 @@ export default function Dashboard() {
               <KpiCard label="Menunggu"         value={data.total_menunggu}     sub="perlu diproses" accentColor="#EF9F27" delay={180} />
             </div>
 
-            {/* Rincian status + inventaris */}
             <div className="mid-grid">
+              {/* Rincian status transaksi */}
               <Panel title="Rincian status transaksi">
                 <StatRow label="Dipinjam"     value={data.total_dipinjam}     color="#378ADD" total={total} />
                 <StatRow label="Dikembalikan" value={data.total_dikembalikan} color="#1D9E75" total={total} />
                 <StatRow label="Menunggu"     value={data.total_menunggu}     color="#EF9F27" total={total} />
                 <StatRow label="Ditolak"      value={data.total_ditolak}      color="#E24B4A" total={total} />
-                <StatRow label="Dibatalkan"   value={data.total_dibatalkan}   color="#888780" total={total} />
               </Panel>
 
               <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                 <Panel title="Inventaris & pengguna">
-                  <InventarisItem label="Total buku"     value={data.total_buku}     bg="#E6F1FB" color="#185FA5" />
-                  <InventarisItem label="Total user"     value={data.total_user}     bg="#EEEDFE" color="#534AB7" />
-                  <InventarisItem label="Siswa"          value={data.total_siswa}    bg="#E1F5EE" color="#0F6E56" />
-                  <InventarisItem label="Staff"          value={data.total_staff}    bg="#FAEEDA" color="#854F0B" />
-                  <InventarisItem label="Operator"       value={data.total_operator} bg="#FAECE7" color="#993C1D" />
+                  <InventarisItem label="Total buku"  value={data.total_buku}     bg="#E6F1FB" color="#185FA5" />
+                  <InventarisItem label="Total user"  value={data.total_user}     bg="#EEEDFE" color="#534AB7" />
+                  <InventarisItem label="Siswa"       value={data.total_siswa}    bg="#E1F5EE" color="#0F6E56" />
+                  <InventarisItem label="Staff"       value={data.total_staff}    bg="#FAEEDA" color="#854F0B" />
+                  <InventarisItem label="Operator"    value={data.total_operator} bg="#FAECE7" color="#993C1D" />
                 </Panel>
 
                 <Panel title="Peringatan">
