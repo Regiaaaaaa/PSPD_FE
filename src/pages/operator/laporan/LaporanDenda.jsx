@@ -48,6 +48,22 @@ const statusBadge = (status) => {
   return <span className="badge badge-ghost badge-sm">{status}</span>;
 };
 
+const formatDate = (dateStr) => {
+  if (!dateStr) return "-";
+  return new Date(dateStr).toLocaleDateString("id-ID", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+};
+
+const formatRupiah = (val) =>
+  new Intl.NumberFormat("id-ID", {
+    style: "currency",
+    currency: "IDR",
+    minimumFractionDigits: 0,
+  }).format(val || 0);
+
 export default function LaporanDenda() {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -78,11 +94,10 @@ export default function LaporanDenda() {
 
   const filtered = data.filter((item) => {
     const q = searchTerm.toLowerCase();
-    return (
-      item.transaksi?.user?.name?.toLowerCase().includes(q) ||
-      item.transaksi?.buku?.judul?.toLowerCase().includes(q) ||
-      item.status_pembayaran?.toLowerCase().includes(q)
-    );
+    const namaUser = item.transaksi_detail?.transaksi?.user?.name?.toLowerCase() ?? "";
+    const judulBuku = item.transaksi_detail?.buku?.judul?.toLowerCase() ?? "";
+    const status = item.status_pembayaran?.toLowerCase() ?? "";
+    return namaUser.includes(q) || judulBuku.includes(q) || status.includes(q);
   });
 
   const totalPages = Math.ceil(filtered.length / itemsPerPage);
@@ -104,22 +119,6 @@ export default function LaporanDenda() {
     if (statusPembayaran) params.status_pembayaran = statusPembayaran;
     exportDendaPdf(params);
   };
-
-  const formatDate = (dateStr) => {
-    if (!dateStr) return "-";
-    return new Date(dateStr).toLocaleDateString("id-ID", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-    });
-  };
-
-  const formatRupiah = (val) =>
-    new Intl.NumberFormat("id-ID", {
-      style: "currency",
-      currency: "IDR",
-      minimumFractionDigits: 0,
-    }).format(val || 0);
 
   const totalNominal = filtered.reduce((acc, item) => acc + (item.nominal || 0), 0);
 
@@ -174,7 +173,6 @@ export default function LaporanDenda() {
               </div>
             </div>
 
-            {/* Status Pembayaran */}
             <div className="w-full sm:flex-1 sm:w-auto sm:min-w-[140px]">
               <label className="block text-xs font-medium text-gray-600 mb-1.5">
                 Status Pembayaran
@@ -189,6 +187,7 @@ export default function LaporanDenda() {
                 ))}
               </select>
             </div>
+
             <button
               className="btn btn-sm btn-primary gap-2 w-full sm:w-auto sm:px-5"
               onClick={() => { fetchData(); setCurrentPage(1); }}
@@ -203,7 +202,6 @@ export default function LaporanDenda() {
             </button>
           </div>
 
-          {/* Export */}
           <div className="flex flex-wrap items-center gap-2 mt-3 pt-3 border-t border-gray-100">
             <span className="text-xs text-gray-400">Export:</span>
             <button
@@ -259,17 +257,17 @@ export default function LaporanDenda() {
             </div>
           ) : (
             <>
-              {/* Mobile Card View */}
+              {/* Mobile Card */}
               <div className="block lg:hidden divide-y divide-gray-100">
                 {paginated.map((item, idx) => (
                   <div key={item.id} className="p-4">
                     <div className="flex items-start justify-between gap-2 mb-2">
                       <div className="min-w-0">
                         <p className="font-semibold text-sm text-gray-800 truncate">
-                          {item.transaksi?.buku?.judul || "-"}
+                          {item.transaksi_detail?.buku?.judul || "-"}
                         </p>
                         <p className="text-xs text-gray-500 mt-0.5 truncate">
-                          {item.transaksi?.user?.name || "-"}
+                          {item.transaksi_detail?.transaksi?.user?.name || "-"}
                         </p>
                       </div>
                       <div className="flex-shrink-0 flex flex-col items-end gap-1">
@@ -286,9 +284,9 @@ export default function LaporanDenda() {
                         </p>
                       </div>
                       <div className="bg-gray-50 rounded-lg p-2">
-                        <p className="text-[10px] text-gray-400 mb-0.5">Tgl Denda</p>
+                        <p className="text-[10px] text-gray-400 mb-0.5">Dibayar Pada</p>
                         <p className="text-xs font-medium text-gray-700 leading-tight">
-                          {formatDate(item.created_at)}
+                          {formatDate(item.tgl_pembayaran)}
                         </p>
                       </div>
                     </div>
@@ -305,10 +303,8 @@ export default function LaporanDenda() {
                       <th className="font-semibold text-gray-700">Peminjam</th>
                       <th className="font-semibold text-gray-700">Judul Buku</th>
                       <th className="font-semibold text-gray-700">Nominal</th>
-                      <th className="font-semibold text-gray-700">Tgl Denda</th>
-                      <th className="font-semibold text-gray-700 text-center">
-                        Status Pembayaran
-                      </th>
+                      <th className="font-semibold text-gray-700">Dibayar Pada</th>
+                      <th className="font-semibold text-gray-700 text-center">Status Pembayaran</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -318,17 +314,18 @@ export default function LaporanDenda() {
                         className="border-b border-gray-100 hover:bg-gray-50/50 transition-colors"
                       >
                         <td className="text-sm text-gray-500">{startIndex + idx + 1}</td>
+                        {/* ✅ sesuai relasi BE */}
                         <td className="text-sm font-medium text-gray-700">
-                          {item.transaksi?.user?.name || "-"}
+                          {item.transaksi_detail?.transaksi?.user?.name || "-"}
                         </td>
                         <td className="text-sm text-gray-700 max-w-xs truncate">
-                          {item.transaksi?.buku?.judul || "-"}
+                          {item.transaksi_detail?.buku?.judul || "-"}
                         </td>
                         <td className="text-sm font-semibold text-rose-600">
                           {formatRupiah(item.nominal)}
                         </td>
                         <td className="text-sm text-gray-600">
-                          {formatDate(item.created_at)}
+                          {formatDate(item.tgl_pembayaran)}
                         </td>
                         <td className="text-center">
                           {statusBadge(item.status_pembayaran)}

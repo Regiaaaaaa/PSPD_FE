@@ -74,7 +74,7 @@ export default function LaporanSummary() {
       minimumFractionDigits: 0,
     }).format(val || 0);
   const totalTransaksi =
-    (summary?.transaksi?.kembali ?? 0) + (summary?.transaksi?.ditolak ?? 0);
+    (summary?.transaksi?.dipinjam ?? 0) + (summary?.transaksi?.kembali ?? 0);
 
   return (
     <AppLayout>
@@ -173,7 +173,7 @@ export default function LaporanSummary() {
                   <div className="min-w-0">
                     <p className="text-xs opacity-90">Total Transaksi</p>
                     <p className="text-2xl font-bold mt-1">{totalTransaksi}</p>
-                    <p className="text-[10px] opacity-70 mt-0.5">Kembali + Ditolak</p>
+                    <p className="text-[10px] opacity-70 mt-0.5">Dipinjam + Kembali</p>
                   </div>
                   <TrendingUp className="w-8 h-8 opacity-75 flex-shrink-0" />
                 </div>
@@ -196,9 +196,9 @@ export default function LaporanSummary() {
               <div className="bg-gradient-to-br from-red-500 to-red-600 rounded-xl shadow-sm p-4 text-white">
                 <div className="flex items-center justify-between gap-3">
                   <div className="min-w-0">
-                    <p className="text-xs opacity-90">Ditolak</p>
+                    <p className="text-xs opacity-90">Sedang Dipinjam</p>
                     <p className="text-2xl font-bold mt-1">
-                      {summary.transaksi?.ditolak ?? 0}
+                      {summary.transaksi?.dipinjam ?? 0}
                     </p>
                   </div>
                   <XCircle className="w-8 h-8 opacity-75 flex-shrink-0" />

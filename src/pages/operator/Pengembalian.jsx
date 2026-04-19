@@ -10,10 +10,11 @@ import DetailPengembalianModal from './components/DetailPengembalianModal';
 const Pengembalian = () => {
   const [transaksi, setTransaksi] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [loadingTerima, setLoadingTerima] = useState(null);
+  const [loadingTerima, setLoadingTerima] = useState(null); // menyimpan detail.id yang sedang diproses
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [selectedTransaksi, setSelectedTransaksi] = useState(null);
+  const [selectedDetail, setSelectedDetail] = useState(null); // detail yang akan dikembalikan
   const [activeTab, setActiveTab] = useState('siswa');
   const [searchTerm, setSearchTerm] = useState('');
   const [filterTingkat, setFilterTingkat] = useState('all');
@@ -49,17 +50,18 @@ const Pengembalian = () => {
     setShowDetailModal(true);
   };
 
-  const handleTerimaClick = (t) => {
-    setSelectedTransaksi(t);
+  const handleTerimaClick = (transaksi, detail) => {
+    setSelectedTransaksi(transaksi);
+    setSelectedDetail(detail);
     setShowDetailModal(false);
     setShowConfirmModal(true);
   };
 
   const handleTerimaConfirm = async () => {
     setShowConfirmModal(false);
-    setLoadingTerima(selectedTransaksi.id);
+    setLoadingTerima(selectedDetail.id);
     try {
-      const res = await terimaPengembalian(selectedTransaksi.id);
+      const res = await terimaPengembalian(selectedDetail.id);
       toast.success(res.message || 'Pengembalian berhasil diterima');
       fetchPengembalian();
     } catch (error) {
@@ -67,10 +69,11 @@ const Pengembalian = () => {
     } finally {
       setLoadingTerima(null);
       setSelectedTransaksi(null);
+      setSelectedDetail(null);
     }
   };
-
   const isLate = (tgl_deadline) => {
+    if (!tgl_deadline) return false;
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const deadline = new Date(tgl_deadline);
@@ -88,13 +91,35 @@ const Pengembalian = () => {
 
   const getNamaPeminjam = (user) => {
     if (!user) return '-';
-    return user.siswa?.nama || user.staff?.nama || user.name || '-';
+    return user.siswa?.nama_lengkap || user.staff?.nama_lengkap || user.name || '-';
   };
 
   const formatDate = (date) => {
     if (!date) return '-';
     return new Date(date).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
   };
+  const getActiveDetails = (t) => (t.details || []).filter(d => d.status === 'dipinjam');
+  const getBukuDisplay = (t) => {
+    const active = getActiveDetails(t);
+    if (active.length === 0) return { judul: '-', isbn: '', extra: null };
+    if (active.length === 1) return {
+      judul: active[0].buku?.judul || '-',
+      isbn: active[0].buku?.isbn || '',
+      extra: null,
+    };
+    return {
+      judul: active[0].buku?.judul || '-',
+      isbn: '',
+      extra: `+${active.length - 1} buku lainnya`,
+    };
+  };
+
+  const handleResetFilter = () => {
+    setFilterTingkat('all'); setFilterJurusan('all');
+    setFilterKelas('all'); setSearchTerm(''); setCurrentPage(1);
+  };
+
+  const hasActiveFilter = searchTerm || filterTingkat !== 'all' || filterJurusan !== 'all' || filterKelas !== 'all';
 
   const filteredTransaksi = transaksi
     .filter((t) => {
@@ -104,8 +129,10 @@ const Pengembalian = () => {
     })
     .filter((t) => {
       const nama = getNamaPeminjam(t.user).toLowerCase();
-      const judul = t.buku?.judul?.toLowerCase() || '';
-      const matchSearch = nama.includes(searchTerm.toLowerCase()) || judul.includes(searchTerm.toLowerCase());
+      const judulMatch = (t.details || []).some(d =>
+        d.buku?.judul?.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+      const matchSearch = nama.includes(searchTerm.toLowerCase()) || judulMatch;
       if (activeTab !== 'siswa') return matchSearch;
       const matchTingkat = filterTingkat === 'all' || t.user?.siswa?.tingkat === filterTingkat;
       const matchJurusan = filterJurusan === 'all' || t.user?.siswa?.jurusan === filterJurusan;
@@ -117,13 +144,6 @@ const Pengembalian = () => {
   const startIndex = (currentPage - 1) * itemsPerPage;
   const paginatedTransaksi = filteredTransaksi.slice(startIndex, startIndex + itemsPerPage);
   const goToPage = (page) => { if (page >= 1 && page <= totalPages) setCurrentPage(page); };
-
-  const handleResetFilter = () => {
-    setFilterTingkat('all'); setFilterJurusan('all');
-    setFilterKelas('all'); setSearchTerm(''); setCurrentPage(1);
-  };
-
-  const hasActiveFilter = searchTerm || filterTingkat !== 'all' || filterJurusan !== 'all' || filterKelas !== 'all';
 
   return (
     <AppLayout>
@@ -137,7 +157,7 @@ const Pengembalian = () => {
           </div>
           <div className="flex items-center gap-2 bg-blue-50 border border-blue-200 text-blue-700 text-sm px-4 py-2 rounded-lg">
             <BookOpen size={16} />
-            <span>{filteredTransaksi.length} buku dipinjam</span>
+            <span>{filteredTransaksi.length} transaksi dipinjam</span>
           </div>
         </div>
 
@@ -198,17 +218,17 @@ const Pengembalian = () => {
               <span className="loading loading-spinner loading-lg"></span>
             </div>
           ) : paginatedTransaksi.length === 0 ? (
-          <div className="flex flex-col justify-center items-center py-16 text-gray-400 gap-2">
-            <BookOpen size={40} className="opacity-40" />
-            <p className="text-sm">
-              {hasActiveFilter ? 'Tidak ada data yang ditemukan' : 'Tidak ada data pengembalian'}
-            </p>
-            {hasActiveFilter && (
-              <button className="btn btn-ghost btn-sm mt-1 text-blue-600" onClick={handleResetFilter}>
-                Reset Filter
-              </button>
-            )}
-          </div>
+            <div className="flex flex-col justify-center items-center py-16 text-gray-400 gap-2">
+              <BookOpen size={40} className="opacity-40" />
+              <p className="text-sm">
+                {hasActiveFilter ? 'Tidak ada data yang ditemukan' : 'Tidak ada data pengembalian'}
+              </p>
+              {hasActiveFilter && (
+                <button className="btn btn-ghost btn-sm mt-1 text-blue-600" onClick={handleResetFilter}>
+                  Reset Filter
+                </button>
+              )}
+            </div>
           ) : (
             <>
               <div className="overflow-x-auto">
@@ -222,13 +242,16 @@ const Pengembalian = () => {
                       <th className="font-semibold text-gray-700">Buku</th>
                       <th className="font-semibold text-gray-700">Deadline</th>
                       <th className="font-semibold text-gray-700">Status</th>
-                      <th className="w-36 text-center font-semibold text-gray-700">Aksi</th>
+                      <th className="w-24 text-center font-semibold text-gray-700">Aksi</th>
                     </tr>
                   </thead>
                   <tbody>
                     {paginatedTransaksi.map((t, index) => {
                       const terlambat = isLate(t.tgl_deadline);
                       const selisihHari = terlambat ? hitungSelisihHari(t.tgl_deadline) : 0;
+                      const buku = getBukuDisplay(t);
+                      const activeDetails = getActiveDetails(t);
+
                       return (
                         <tr key={t.id} className={`border-b border-gray-100 hover:bg-gray-50/50 transition-colors duration-150 ${terlambat ? 'bg-red-50/30' : ''}`}>
                           <td className="text-gray-500">{startIndex + index + 1}</td>
@@ -253,13 +276,14 @@ const Pengembalian = () => {
 
                           {/* Buku */}
                           <td>
-                            <p className="font-medium text-gray-800 text-sm line-clamp-1">{t.buku?.judul || '-'}</p>
-                            <p className="text-xs text-gray-400">{t.buku?.isbn || ''}</p>
+                            <p className="font-medium text-gray-800 text-sm line-clamp-1">{buku.judul}</p>
+                            {buku.isbn && <p className="text-xs text-gray-400">{buku.isbn}</p>}
+                            {buku.extra && <p className="text-xs text-blue-500">{buku.extra}</p>}
                           </td>
 
                           {/* Deadline */}
                           <td>
-                            <div className={`flex items-center gap-1 text-sm ${terlambat ? 'text-red-600 font-medium' : 'text-gray-600'}`}>
+                            <div className={`text-sm ${terlambat ? 'text-red-600 font-medium' : 'text-gray-600'}`}>
                               {formatDate(t.tgl_deadline)}
                             </div>
                           </td>
@@ -278,26 +302,38 @@ const Pengembalian = () => {
 
                           {/* Aksi */}
                           <td>
-                            <div className="flex gap-2 justify-center">
+                            <div className="flex gap-1.5 justify-center">
                               <button
                                 className="btn btn-ghost btn-xs text-blue-600 hover:bg-blue-50"
                                 onClick={() => handleDetailClick(t)}
                                 title="Detail"
                               >
-                                <Eye size={16} />
+                                <Eye size={15} />
                               </button>
-                              <button
-                                className="btn btn-sm bg-green-600 hover:bg-green-700 text-white border-none gap-1 shadow-sm"
-                                onClick={() => handleTerimaClick(t)}
-                                disabled={loadingTerima === t.id}
-                              >
-                                {loadingTerima === t.id ? (
-                                  <span className="loading loading-spinner loading-xs"></span>
-                                ) : (
+                              {/* Jika hanya 1 buku aktif */}
+                              {activeDetails.length === 1 ? (
+                                <button
+                                  className="btn btn-sm bg-green-600 hover:bg-green-700 text-white border-none gap-1 shadow-sm"
+                                  onClick={() => handleTerimaClick(t, activeDetails[0])}
+                                  disabled={loadingTerima === activeDetails[0].id}
+                                >
+                                  {loadingTerima === activeDetails[0].id ? (
+                                    <span className="loading loading-spinner loading-xs"></span>
+                                  ) : (
+                                    <CheckCircle size={15} />
+                                  )}
+                                  Terima
+                                </button>
+                              ) : (
+                                <button
+                                  className="btn btn-sm bg-green-600 hover:bg-green-700 text-white border-none gap-1 shadow-sm"
+                                  onClick={() => handleDetailClick(t)}
+                                  title="Lihat detail untuk kembalikan per buku"
+                                >
                                   <CheckCircle size={15} />
-                                )}
-                                Terima
-                              </button>
+                                  Terima
+                                </button>
+                              )}
                             </div>
                           </td>
                         </tr>
@@ -332,18 +368,18 @@ const Pengembalian = () => {
       {/* Confirm Modal */}
       <ConfirmModal
         isOpen={showConfirmModal}
-        onClose={() => { setShowConfirmModal(false); setSelectedTransaksi(null); }}
+        onClose={() => { setShowConfirmModal(false); setSelectedTransaksi(null); setSelectedDetail(null); }}
         onConfirm={handleTerimaConfirm}
         title="Konfirmasi Pengembalian"
         message={
-          selectedTransaksi ? (
+          selectedDetail && selectedTransaksi ? (
             <div className="space-y-1">
               <p>Terima pengembalian buku berikut?</p>
-              <p className="font-semibold text-gray-800">{selectedTransaksi.buku?.judul}</p>
+              <p className="font-semibold text-gray-800">{selectedDetail.buku?.judul || '-'}</p>
               <p className="text-sm text-gray-500">Peminjam: {getNamaPeminjam(selectedTransaksi.user)}</p>
               {isLate(selectedTransaksi.tgl_deadline) && (
                 <p className="text-sm text-red-600 font-medium mt-2">
-                  ⚠️ Terlambat {hitungSelisihHari(selectedTransaksi.tgl_deadline)} hari · Denda Rp{' '}
+                  ⚠️ Terlambat {hitungSelisihHari(selectedTransaksi.tgl_deadline)} hari · Estimasi denda Rp{' '}
                   {(hitungSelisihHari(selectedTransaksi.tgl_deadline) * 1000).toLocaleString('id-ID')}
                 </p>
               )}

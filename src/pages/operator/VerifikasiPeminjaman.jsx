@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
-import { Eye, ClipboardList, CheckCircle, XCircle, Clock } from 'lucide-react';
+import { Eye, ClipboardList, CheckCircle, XCircle, Clock, AlertCircle } from 'lucide-react';
 import { getVerifikasi, approveVerifikasi, rejectVerifikasi } from '../../services/operator/verifikasiService';
 import AppLayout from '../../components/AppLayout';
 import Pagination from '../../components/common/Pagination';
@@ -150,6 +150,36 @@ const VerifikasiPeminjaman = () => {
     });
   };
 
+  // Helpers untuk details
+  const getDetails = (item) => item.details || [];
+
+  const getBukuDisplay = (item) => {
+    const list = getDetails(item);
+    if (list.length === 0) return { judul: '-', isbn: '', extra: null };
+    if (list.length === 1) return {
+      judul: list[0].buku?.judul || '-',
+      isbn: list[0].buku?.isbn || '',
+      extra: null,
+    };
+    return {
+      judul: list[0].buku?.judul || '-',
+      isbn: '',
+      extra: `+${list.length - 1} buku lainnya`,
+    };
+  };
+
+  const getDeadlineDisplay = (item) => {
+    const details = getDetails(item);
+    if (details.length > 0 && details[0].tgl_deadline) return formatDate(details[0].tgl_deadline);
+    return formatDate(item.tgl_deadline);
+  };
+
+  const isAllStokOk = (item) => {
+    const list = getDetails(item);
+    if (list.length === 0) return false;
+    return list.every(d => (d.buku?.stok_tersedia ?? 0) >= (d.jumlah ?? 1));
+  };
+
   const handleResetFilter = () => {
     setFilterTingkat('all');
     setFilterJurusan('all');
@@ -158,7 +188,7 @@ const VerifikasiPeminjaman = () => {
     setCurrentPage(1);
   };
 
-  const hasActiveFilter = searchTerm || filterTingkat !== 'all' || filterJurusan !== 'all' || filterKelas !== 'all'
+  const hasActiveFilter = searchTerm || filterTingkat !== 'all' || filterJurusan !== 'all' || filterKelas !== 'all';
 
   // Filter
   const filteredTransaksi = transaksi
@@ -169,8 +199,10 @@ const VerifikasiPeminjaman = () => {
     })
     .filter((item) => {
       const nama = getNama(item).toLowerCase();
-      const judul = item.buku?.judul?.toLowerCase() || '';
-      const matchSearch = nama.includes(searchTerm.toLowerCase()) || judul.includes(searchTerm.toLowerCase());
+      const judulMatch = getDetails(item).some(d =>
+        d.buku?.judul?.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+      const matchSearch = nama.includes(searchTerm.toLowerCase()) || judulMatch;
       if (activeTab !== 'siswa') return matchSearch;
       const matchTingkat = filterTingkat === 'all' || item.user?.siswa?.tingkat === filterTingkat;
       const matchJurusan = filterJurusan === 'all' || item.user?.siswa?.jurusan === filterJurusan;
@@ -298,19 +330,19 @@ const VerifikasiPeminjaman = () => {
               <span className="loading loading-spinner loading-lg"></span>
             </div>
           ) : paginatedData.length === 0 ? (
-          <div className="flex flex-col justify-center items-center py-16 text-gray-400 gap-2">
-            <ClipboardList size={40} className="opacity-40" />
-            <p className="text-sm">
-              {hasActiveFilter
-                ? 'Tidak ada transaksi yang ditemukan'
-                : 'Tidak ada transaksi yang menunggu'}
-            </p>
-            {hasActiveFilter && (
-              <button className="btn btn-ghost btn-sm mt-1 text-blue-600" onClick={handleResetFilter}>
-                Reset Filter
-              </button>
-            )}
-          </div>
+            <div className="flex flex-col justify-center items-center py-16 text-gray-400 gap-2">
+              <ClipboardList size={40} className="opacity-40" />
+              <p className="text-sm">
+                {hasActiveFilter
+                  ? 'Tidak ada transaksi yang ditemukan'
+                  : 'Tidak ada transaksi yang menunggu'}
+              </p>
+              {hasActiveFilter && (
+                <button className="btn btn-ghost btn-sm mt-1 text-blue-600" onClick={handleResetFilter}>
+                  Reset Filter
+                </button>
+              )}
+            </div>
           ) : (
             <>
               {/* Table View */}
@@ -328,66 +360,74 @@ const VerifikasiPeminjaman = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {paginatedData.map((item, index) => (
-                      <tr
-                        key={item.id}
-                        className="border-b border-gray-100 hover:bg-gray-50/50 transition-colors duration-150"
-                      >
-                        <td className="text-gray-500">{startIndex + index + 1}</td>
+                    {paginatedData.map((item, index) => {
+                      const buku = getBukuDisplay(item);
+                      return (
+                        <tr
+                          key={item.id}
+                          className="border-b border-gray-100 hover:bg-gray-50/50 transition-colors duration-150"
+                        >
+                          <td className="text-gray-500">{startIndex + index + 1}</td>
 
-                        {/* Peminjam */}
-                        <td>
-                          <p className="font-medium text-gray-800 text-sm">{getNama(item)}</p>
-                          <p className="text-xs text-gray-400">
-                            {activeTab === 'siswa'
-                              ? item.user?.siswa?.nomor_induk_siswa || '-'
-                              : item.user?.staff?.nomor_induk_pegawai || '-'}
-                          </p>
-                        </td>
+                          {/* Peminjam */}
+                          <td>
+                            <p className="font-medium text-gray-800 text-sm">{getNama(item)}</p>
+                            <p className="text-xs text-gray-400">
+                              {activeTab === 'siswa'
+                                ? item.user?.siswa?.nomor_induk_siswa || '-'
+                                : item.user?.staff?.nomor_induk_pegawai || '-'}
+                            </p>
+                          </td>
 
-                        {/* Kelas/jabatan */}
-                        {activeTab === 'siswa' && (
-                          <td className="text-sm text-gray-600">{getSubInfo(item)}</td>
-                        )}
-                        {activeTab === 'staff' && (
-                          <td className="text-sm text-gray-600">{item.user?.staff?.jabatan || '-'}</td>
-                        )}
+                          {/* Kelas/Jabatan */}
+                          {activeTab === 'siswa' && (
+                            <td className="text-sm text-gray-600">{getSubInfo(item)}</td>
+                          )}
+                          {activeTab === 'staff' && (
+                            <td className="text-sm text-gray-600">{item.user?.staff?.jabatan || '-'}</td>
+                          )}
 
-                        {/* Buku */}
-                        <td>
-                          <p className="font-medium text-gray-800 text-sm line-clamp-1">{item.buku?.judul || '-'}</p>
-                          <p className="text-xs text-gray-400">{item.buku?.isbn || ''}</p>
-                        </td>
-                        <td className="text-center text-sm text-gray-600">{formatDate(item.tgl_deadline)}</td>
+                          {/* Buku */}
+                          <td>
+                            <p className="font-medium text-gray-800 text-sm line-clamp-1">{buku.judul}</p>
+                            {buku.isbn && <p className="text-xs text-gray-400">{buku.isbn}</p>}
+                            {buku.extra && <p className="text-xs text-blue-500">{buku.extra}</p>}
+                          </td>
 
-                        {/* Aksi */}
-                        <td>
-                          <div className="flex gap-1.5 justify-center">
-                            <button
-                              className="btn btn-ghost btn-xs text-blue-600 hover:bg-blue-50"
-                              onClick={() => handleDetailClick(item)}
-                              title="Detail"
-                            >
-                              <Eye size={15} />
-                            </button>
-                            <button
-                              className="btn btn-ghost btn-xs text-green-600 hover:bg-green-50"
-                              onClick={() => handleApproveClick(item)}
-                              title="Setujui"
-                            >
-                              <CheckCircle size={15} />
-                            </button>
-                            <button
-                              className="btn btn-ghost btn-xs text-red-600 hover:bg-red-50"
-                              onClick={() => handleRejectClick(item)}
-                              title="Tolak"
-                            >
-                              <XCircle size={15} />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
+                          {/* Deadline */}
+                          <td className="text-center text-sm text-gray-600">
+                            {getDeadlineDisplay(item)}
+                          </td>
+
+                          {/* Aksi */}
+                          <td>
+                            <div className="flex gap-1.5 justify-center">
+                              <button
+                                className="btn btn-ghost btn-xs text-blue-600 hover:bg-blue-50"
+                                onClick={() => handleDetailClick(item)}
+                                title="Detail"
+                              >
+                                <Eye size={15} />
+                              </button>
+                              <button
+                                className="btn btn-ghost btn-xs text-green-600 hover:bg-green-50"
+                                onClick={() => handleApproveClick(item)}
+                                title="Setujui"
+                              >
+                                <CheckCircle size={15} />
+                              </button>
+                              <button
+                                className="btn btn-ghost btn-xs text-red-600 hover:bg-red-50"
+                                onClick={() => handleRejectClick(item)}
+                                title="Tolak"
+                              >
+                                <XCircle size={15} />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
@@ -438,16 +478,36 @@ const VerifikasiPeminjaman = () => {
             <div className="space-y-2">
               <p className="text-sm text-gray-600">Apakah kamu yakin ingin menyetujui peminjaman berikut?</p>
               <div className="bg-green-50 rounded-lg p-3 space-y-1">
-                <p className="text-sm"><span className="font-semibold">Peminjam:</span> {getNama(selectedApprove)}</p>
-                <p className="text-sm"><span className="font-semibold">{getSubInfoLabel(selectedApprove)}:</span> {getSubInfo(selectedApprove)}</p>
-                <p className="text-sm"><span className="font-semibold">Buku:</span> {selectedApprove.buku?.judul || '-'}</p>
                 <p className="text-sm">
-                  <span className="font-semibold">Stok Tersedia:</span>{' '}
-                  <span className={selectedApprove.buku?.stok_tersedia > 0 ? 'text-green-600 font-bold' : 'text-red-600 font-bold'}>
-                    {selectedApprove.buku?.stok_tersedia ?? '-'}
-                  </span>
+                  <span className="font-semibold">Peminjam:</span> {getNama(selectedApprove)}
                 </p>
+                <p className="text-sm">
+                  <span className="font-semibold">{getSubInfoLabel(selectedApprove)}:</span> {getSubInfo(selectedApprove)}
+                </p>
+                <div className="text-sm">
+                  <span className="font-semibold">Buku:</span>
+                  <ul className="mt-1 space-y-1 pl-2">
+                    {getDetails(selectedApprove).map((d, i) => (
+                      <li key={i} className="flex justify-between text-xs gap-2">
+                        <span className="line-clamp-1 flex-1">{d.buku?.judul || '-'}</span>
+                        <span className={
+                          (d.buku?.stok_tersedia ?? 0) >= (d.jumlah ?? 1)
+                            ? 'text-green-600 font-bold flex-shrink-0'
+                            : 'text-red-600 font-bold flex-shrink-0'
+                        }>
+                          Stok: {d.buku?.stok_tersedia ?? '-'}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
               </div>
+              {!isAllStokOk(selectedApprove) && (
+                <p className="text-xs text-red-500 flex items-center gap-1">
+                  <AlertCircle size={12} />
+                  Ada buku dengan stok tidak mencukupi
+                </p>
+              )}
             </div>
           )
         }
@@ -459,9 +519,22 @@ const VerifikasiPeminjaman = () => {
           <div className="modal-box w-11/12 max-w-md">
             <h3 className="font-bold text-base mb-4">Tolak Peminjaman</h3>
             <div className="bg-red-50 rounded-lg p-3 mb-4 space-y-1">
-              <p className="text-sm"><span className="font-semibold">Peminjam:</span> {getNama(selectedReject)}</p>
-              <p className="text-sm"><span className="font-semibold">{getSubInfoLabel(selectedReject)}:</span> {getSubInfo(selectedReject)}</p>
-              <p className="text-sm"><span className="font-semibold">Buku:</span> {selectedReject.buku?.judul || '-'}</p>
+              <p className="text-sm">
+                <span className="font-semibold">Peminjam:</span> {getNama(selectedReject)}
+              </p>
+              <p className="text-sm">
+                <span className="font-semibold">{getSubInfoLabel(selectedReject)}:</span> {getSubInfo(selectedReject)}
+              </p>
+              <div className="text-sm">
+                <span className="font-semibold">Buku:</span>
+                <ul className="mt-1 space-y-0.5 pl-2">
+                  {getDetails(selectedReject).map((d, i) => (
+                    <li key={i} className="text-xs text-gray-600 line-clamp-1">
+                      • {d.buku?.judul || '-'}
+                    </li>
+                  ))}
+                </ul>
+              </div>
             </div>
             <div className="form-control w-full mb-2">
               <label className="label pb-1">

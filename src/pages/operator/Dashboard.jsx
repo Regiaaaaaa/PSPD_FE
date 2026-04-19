@@ -73,6 +73,9 @@ const DendaItem = ({ label, value, bg, color }) => (
   </div>
 );
 
+const formatRupiah = (val) =>
+  `Rp ${(val ?? 0).toLocaleString("id-ID")}`;
+
 export default function DashboardOperator() {
   const [data, setData]       = useState(null);
   const [loading, setLoading] = useState(true);
@@ -155,37 +158,43 @@ export default function DashboardOperator() {
           <>
             <div className="flex items-center gap-2 mb-3">
               <p className="text-xs text-gray-400">
-                Data transaksi — {MONTHS[data.filter.bulan - 1]} {data.filter.tahun}
+                Data Aktivitas — {MONTHS[data.filter.bulan - 1]} {data.filter.tahun}
               </p>
               {loading && <span className="loading loading-spinner loading-xs text-gray-400" />}
             </div>
 
             {/* KPI */}
             <div className="kpi-grid">
-              <KpiCard label="Total transaksi"        value={data.total_transaksi}        sub="bulan ini"      accentColor="#378ADD" delay={0}   />
+              <KpiCard label="Total Aktivitas"        value={data.total_transaksi}        sub="bulan ini"      accentColor="#378ADD" delay={0}   />
               <KpiCard label="Sedang dipinjam"        value={data.sedang_dipinjam}        sub="aktif"          accentColor="#1D9E75" delay={60}  />
               <KpiCard label="Pengembalian bulan ini" value={data.pengembalian_bulan_ini} sub="selesai"        accentColor="#639922" delay={120} />
               <KpiCard label="Menunggu persetujuan"   value={data.menunggu_persetujuan}   sub="perlu diproses" accentColor="#EF9F27" delay={180} />
             </div>
 
             <div className="mid-grid">
-              {/* Rincian status transaksi */}
-              <Panel title="Rincian status transaksi">
+              <Panel title="Rincian status Aktivitas">
                 <StatRow label="Sedang dipinjam"        value={data.sedang_dipinjam}        color="#378ADD" total={total} />
                 <StatRow label="Pengembalian bulan ini" value={data.pengembalian_bulan_ini} color="#1D9E75" total={total} />
                 <StatRow label="Menunggu persetujuan"   value={data.menunggu_persetujuan}   color="#EF9F27" total={total} />
                 <StatRow label="Ditolak"                value={data.total_ditolak}          color="#E24B4A" total={total} />
+                <StatRow label="Dibatalkan"             value={data.total_dibatalkan}       color="#888780" total={total} />
               </Panel>
 
               <Panel title="Rekap denda">
-                <DendaItem label="Total denda"  value={data.total_denda}       bg="#E6F1FB" color="#185FA5" />
+                <DendaItem label="Total denda"   value={data.total_denda}       bg="#E6F1FB" color="#185FA5" />
                 <DendaItem
                   label="Belum lunas"
                   value={data.denda_belum_lunas}
                   bg={data.denda_belum_lunas > 0 ? "#FAECE7" : "#F1EFE8"}
                   color={data.denda_belum_lunas > 0 ? "#993C1D" : "#5F5E5A"}
                 />
-                <DendaItem label="Sudah lunas"  value={data.denda_lunas}       bg="#E1F5EE" color="#0F6E56" />
+                <DendaItem label="Sudah lunas"   value={data.denda_lunas}       bg="#E1F5EE" color="#0F6E56" />
+                <DendaItem
+                  label="Denda berjalan"
+                  value={formatRupiah(data.denda_berjalan)}
+                  bg={data.denda_berjalan > 0 ? "#FAECE7" : "#F1EFE8"}
+                  color={data.denda_berjalan > 0 ? "#993C1D" : "#5F5E5A"}
+                />
               </Panel>
             </div>
           </>

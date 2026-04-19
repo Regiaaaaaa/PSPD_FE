@@ -2,16 +2,17 @@ import { getToken } from "../../utils/auth";
 
 const API_URL = "/api/user/transaksi";
 
+const headers = () => ({
+  "Content-Type": "application/json",
+  "Accept": "application/json",
+  Authorization: `Bearer ${getToken()}`,
+});
+
 // Get all transaksi user yang login
 export const getMyTransaksi = async () => {
-  const token = getToken();
-
   const res = await fetch(API_URL, {
     method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
+    headers: headers(),
   });
 
   const data = await res.json();
@@ -19,17 +20,11 @@ export const getMyTransaksi = async () => {
   return data;
 };
 
- // @param {Array} books
-export const ajukanPeminjaman = async (books) => {
-  const token = getToken();
-
+export const ajukanPeminjaman = async (payload) => {
   const res = await fetch(`${API_URL}/pinjam`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
-    body: JSON.stringify({ books }),
+    headers: headers(),
+    body: JSON.stringify(payload),
   });
 
   const data = await res.json();
@@ -39,14 +34,9 @@ export const ajukanPeminjaman = async (books) => {
 
 // Get detail transaksi
 export const getTransaksiById = async (id) => {
-  const token = getToken();
-
-  const res = await fetch(`${API_URL}/show/${id}`, {
+   const res = await fetch(`${API_URL}/${id}`, {
     method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
+    headers: headers(),
   });
 
   const data = await res.json();
@@ -55,14 +45,9 @@ export const getTransaksiById = async (id) => {
 };
 
 export const cancelTransaksi = async (id) => {
-  const token = getToken();
-
   const res = await fetch(`${API_URL}/cancel/${id}`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
+    headers: headers(),
   });
 
   const data = await res.json();
@@ -71,14 +56,9 @@ export const cancelTransaksi = async (id) => {
 };
 
 export const cekDendaAktif = async () => {
-  const token = getToken();
-
   const res = await fetch(`${API_URL}/cek-denda`, {
     method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
+    headers: headers(),
   });
 
   const data = await res.json();
@@ -86,16 +66,11 @@ export const cekDendaAktif = async () => {
   return data;
 };
 
-// Ambil daftar notifikasi 
+// Ambil daftar notifikasi
 export const getNotifications = async () => {
-  const token = getToken();
-
   const res = await fetch("/api/user/notifications", {
     method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
+    headers: headers(),
   });
 
   const data = await res.json();
@@ -105,14 +80,9 @@ export const getNotifications = async () => {
 
 // Tandai notifikasi
 export const markNotificationAsRead = async (id) => {
-  const token = getToken();
-
   const res = await fetch(`/api/user/notifications/${id}/read`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
+    headers: headers(),
   });
 
   const data = await res.json();
@@ -122,14 +92,9 @@ export const markNotificationAsRead = async (id) => {
 
 // Tandai semua notifikasi
 export const markAllNotificationsRead = async () => {
-  const token = getToken();
-
   const res = await fetch("/api/user/notifications/mark-all-read", {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
+    headers: headers(),
   });
 
   const data = await res.json();

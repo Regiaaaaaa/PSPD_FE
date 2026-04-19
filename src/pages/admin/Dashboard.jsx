@@ -73,6 +73,9 @@ const InventarisItem = ({ label, value, bg, color }) => (
   </div>
 );
 
+const formatRupiah = (val) =>
+  `Rp ${(val ?? 0).toLocaleString("id-ID")}`;
+
 export default function Dashboard() {
   const [data, setData]       = useState(null);
   const [loading, setLoading] = useState(true);
@@ -155,35 +158,35 @@ export default function Dashboard() {
           <>
             <div className="flex items-center gap-2 mb-3">
               <p className="text-xs text-gray-400">
-                Data transaksi — {MONTHS[data.filter.bulan - 1]} {data.filter.tahun}
+                Data Aktivitas — {MONTHS[data.filter.bulan - 1]} {data.filter.tahun}
               </p>
               {loading && <span className="loading loading-spinner loading-xs text-gray-400" />}
             </div>
 
             {/* KPI transaksi */}
             <div className="kpi-grid">
-              <KpiCard label="Total transaksi"  value={data.total_transaksi}    sub="bulan ini"      accentColor="#378ADD" delay={0}   />
-              <KpiCard label="Sedang dipinjam"  value={data.total_dipinjam}     sub="aktif"          accentColor="#1D9E75" delay={60}  />
-              <KpiCard label="Dikembalikan"     value={data.total_dikembalikan} sub="selesai"        accentColor="#639922" delay={120} />
-              <KpiCard label="Menunggu"         value={data.total_menunggu}     sub="perlu diproses" accentColor="#EF9F27" delay={180} />
+              <KpiCard label="Total Aktivitas" value={data.total_transaksi}    sub="bulan ini"      accentColor="#378ADD" delay={0}   />
+              <KpiCard label="Sedang dipinjam" value={data.total_dipinjam}     sub="aktif"          accentColor="#1D9E75" delay={60}  />
+              <KpiCard label="Dikembalikan"    value={data.total_dikembalikan} sub="selesai"        accentColor="#639922" delay={120} />
+              <KpiCard label="Menunggu"        value={data.total_menunggu}     sub="perlu diproses" accentColor="#EF9F27" delay={180} />
             </div>
 
             <div className="mid-grid">
-              {/* Rincian status transaksi */}
-              <Panel title="Rincian status transaksi">
+              <Panel title="Rincian status Aktivitas">
                 <StatRow label="Dipinjam"     value={data.total_dipinjam}     color="#378ADD" total={total} />
                 <StatRow label="Dikembalikan" value={data.total_dikembalikan} color="#1D9E75" total={total} />
                 <StatRow label="Menunggu"     value={data.total_menunggu}     color="#EF9F27" total={total} />
                 <StatRow label="Ditolak"      value={data.total_ditolak}      color="#E24B4A" total={total} />
+                <StatRow label="Dibatalkan"   value={data.total_dibatalkan}   color="#888780" total={total} />
               </Panel>
 
               <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                 <Panel title="Inventaris & pengguna">
-                  <InventarisItem label="Total buku"  value={data.total_buku}     bg="#E6F1FB" color="#185FA5" />
-                  <InventarisItem label="Total user"  value={data.total_user}     bg="#EEEDFE" color="#534AB7" />
-                  <InventarisItem label="Siswa"       value={data.total_siswa}    bg="#E1F5EE" color="#0F6E56" />
-                  <InventarisItem label="Staff"       value={data.total_staff}    bg="#FAEEDA" color="#854F0B" />
-                  <InventarisItem label="Operator"    value={data.total_operator} bg="#FAECE7" color="#993C1D" />
+                  <InventarisItem label="Total buku" value={data.total_buku}     bg="#E6F1FB" color="#185FA5" />
+                  <InventarisItem label="Total user" value={data.total_user}     bg="#EEEDFE" color="#534AB7" />
+                  <InventarisItem label="Siswa"      value={data.total_siswa}    bg="#E1F5EE" color="#0F6E56" />
+                  <InventarisItem label="Staff"      value={data.total_staff}    bg="#FAEEDA" color="#854F0B" />
+                  <InventarisItem label="Operator"   value={data.total_operator} bg="#FAECE7" color="#993C1D" />
                 </Panel>
 
                 <Panel title="Peringatan">
@@ -191,22 +194,33 @@ export default function Dashboard() {
                     <span style={{ fontSize: 13, color: "#6b7280" }}>Denda belum lunas</span>
                     <span style={{
                       fontSize: 13, fontWeight: 500,
-                      color: data.denda_belum_lunas > 0 ? "#c2410c" : "#6b7280",
-                      background: data.denda_belum_lunas > 0 ? "#fff7ed" : "#f3f4f6",
+                      color: data.denda_belum_lunas > 0 ? "#993C1D" : "#6b7280",
+                      background: data.denda_belum_lunas > 0 ? "#FAECE7" : "#f3f4f6",
                       padding: "2px 10px", borderRadius: 6,
                     }}>
                       {data.denda_belum_lunas}
                     </span>
                   </div>
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "9px 0" }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "9px 0", borderBottom: "0.5px solid #f3f4f6" }}>
                     <span style={{ fontSize: 13, color: "#6b7280" }}>Stok buku menipis</span>
                     <span style={{
                       fontSize: 13, fontWeight: 500,
-                      color: data.buku_stok_menipis > 0 ? "#b45309" : "#6b7280",
-                      background: data.buku_stok_menipis > 0 ? "#fefce8" : "#f3f4f6",
+                      color: data.buku_stok_menipis > 0 ? "#854F0B" : "#6b7280",
+                      background: data.buku_stok_menipis > 0 ? "#FAEEDA" : "#f3f4f6",
                       padding: "2px 10px", borderRadius: 6,
                     }}>
                       {data.buku_stok_menipis}
+                    </span>
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "9px 0" }}>
+                    <span style={{ fontSize: 13, color: "#6b7280" }}>Denda berjalan</span>
+                    <span style={{
+                      fontSize: 13, fontWeight: 500,
+                      color: data.denda_berjalan > 0 ? "#993C1D" : "#6b7280",
+                      background: data.denda_berjalan > 0 ? "#FAECE7" : "#f3f4f6",
+                      padding: "2px 10px", borderRadius: 6,
+                    }}>
+                      {formatRupiah(data.denda_berjalan)}
                     </span>
                   </div>
                 </Panel>

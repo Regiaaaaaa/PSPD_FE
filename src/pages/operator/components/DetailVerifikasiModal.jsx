@@ -22,7 +22,8 @@ const DetailVerifikasiModal = ({
     </div>
   );
 
-  const stokOk = (t.buku?.stok_tersedia ?? 0) > 0;
+  const details = t.details || [];
+  const allStokOk = details.every(d => (d.buku?.stok_tersedia ?? 0) >= (d.jumlah ?? 1));
 
   return (
     <div className="modal modal-open">
@@ -36,20 +37,20 @@ const DetailVerifikasiModal = ({
           </button>
         </div>
 
-        <div className="px-4 py-4 space-y-4">
+        <div className="px-4 py-4 space-y-4 max-h-[70vh] overflow-y-auto">
 
           {/* Status Banner */}
           <div className={`flex items-center gap-2 rounded-lg p-3 border ${
-            stokOk
+            allStokOk
               ? 'bg-green-50 border-green-200'
               : 'bg-red-50 border-red-200'
           }`}>
-            {stokOk
+            {allStokOk
               ? <BookOpen size={15} className="text-green-500 flex-shrink-0" />
               : <AlertCircle size={15} className="text-red-500 flex-shrink-0" />
             }
-            <p className={`text-xs font-semibold ${stokOk ? 'text-green-600' : 'text-red-700'}`}>
-              {stokOk ? `Stok Tersedia (${t.buku?.stok_tersedia})` : 'Stok Tidak Mencukupi'}
+            <p className={`text-xs font-semibold ${allStokOk ? 'text-green-600' : 'text-red-700'}`}>
+              {allStokOk ? 'Semua Stok Tersedia' : 'Ada Buku dengan Stok Tidak Mencukupi'}
             </p>
           </div>
 
@@ -84,20 +85,42 @@ const DetailVerifikasiModal = ({
 
           {/* Info Buku */}
           <div>
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Buku</p>
-            <div className="bg-gray-50 rounded-lg px-3 py-1">
-              <Row label="Judul" value={t.buku?.judul || '-'} />
-              <Row label="ISBN" value={t.buku?.isbn || '-'} />
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
+              Buku ({details.length})
+            </p>
+            <div className="space-y-2">
+              {details.length === 0 ? (
+                <p className="text-xs text-gray-400 italic px-3">Tidak ada data buku</p>
+              ) : (
+                details.map((d, i) => {
+                  const stokOk = (d.buku?.stok_tersedia ?? 0) >= (d.jumlah ?? 1);
+                  return (
+                    <div key={i} className="bg-gray-50 rounded-lg px-3 py-1">
+                      <Row label="Judul" value={d.buku?.judul || '-'} />
+                      <Row label="ISBN" value={d.buku?.isbn || '-'} />
+                      <Row label="Jumlah" value={d.jumlah ?? 1} />
+                      <Row
+                        label="Stok Tersedia"
+                        value={d.buku?.stok_tersedia ?? '-'}
+                        valueClass={stokOk ? 'text-green-600' : 'text-red-600'}
+                      />
+                      {d.tgl_deadline && (
+                        <Row label="Deadline" value={formatDate(d.tgl_deadline)} />
+                      )}
+                    </div>
+                  );
+                })
+              )}
             </div>
           </div>
-
-          {/* Info Transaksi */}
-          <div>
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Tanggal</p>
-            <div className="bg-gray-50 rounded-lg px-3 py-1">
-              <Row label="Deadline" value={formatDate(t.tgl_deadline)} />
+          {t.tgl_deadline && (
+            <div>
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Tanggal</p>
+              <div className="bg-gray-50 rounded-lg px-3 py-1">
+                <Row label="Deadline" value={formatDate(t.tgl_deadline)} />
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Kepentingan */}
           <div>
@@ -126,8 +149,8 @@ const DetailVerifikasiModal = ({
           <button
             className="btn btn-sm btn-success gap-1 text-white"
             onClick={() => onApprove(t)}
-            disabled={!stokOk}
-            title={!stokOk ? 'Stok tidak mencukupi' : 'Setujui'}
+            disabled={!allStokOk}
+            title={!allStokOk ? 'Ada buku dengan stok tidak mencukupi' : 'Setujui'}
           >
             <CheckCircle size={14} />
             Setujui

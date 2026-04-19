@@ -47,15 +47,24 @@ const PeminjamanSaya = () => {
   };
 
   const statusConfig = {
-    menunggu:   { label: 'Menunggu',      badge: 'badge-warning', icon: <Clock size={14} /> },
-    dipinjam:   { label: 'Dipinjam',      badge: 'badge-info',    icon: <BookOpen size={14} /> },
-    kembali:    { label: 'Dikembalikan',  badge: 'badge-success', icon: <CheckCircle size={14} /> },
-    ditolak:    { label: 'Ditolak',       badge: 'badge-error',   icon: <XCircle size={14} /> },
-    dibatalkan: { label: 'Dibatalkan',    badge: 'badge-ghost',   icon: <XCircle size={14} /> },
+    menunggu:   { label: 'Menunggu',     badge: 'badge-warning', icon: <Clock size={14} /> },
+    dipinjam:   { label: 'Dipinjam',     badge: 'badge-info',    icon: <BookOpen size={14} /> },
+    kembali:    { label: 'Dikembalikan', badge: 'badge-success', icon: <CheckCircle size={14} /> },
+    ditolak:    { label: 'Ditolak',      badge: 'badge-error',   icon: <XCircle size={14} /> },
+    dibatalkan: { label: 'Dibatalkan',   badge: 'badge-ghost',   icon: <XCircle size={14} /> },
   };
 
   const getStatusInfo = (status) => statusConfig[status] || {
     label: status || 'Unknown', badge: 'badge-ghost', icon: <Clock size={14} />,
+  };
+
+  const detailStatusConfig = {
+    dipinjam:     { label: 'Dipinjam',      badge: 'badge-info' },
+    kembali:      { label: 'Dikembalikan',  badge: 'badge-success' },
+  };
+
+  const getDetailStatusInfo = (status) => detailStatusConfig[status] || {
+    label: status || '-', badge: 'badge-ghost',
   };
 
   const formatDate = (dateStr) => {
@@ -72,9 +81,11 @@ const PeminjamanSaya = () => {
   };
 
   const filteredTransaksi = transaksi.filter((t) => {
-    const matchSearch =
-      t.buku?.judul?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      t.buku?.penulis?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchSearch = !searchTerm || t.details?.some(
+      (d) =>
+        d.buku?.judul?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        d.buku?.penulis?.toLowerCase().includes(searchTerm.toLowerCase())
+    );
     const matchStatus = filterStatus ? t.status === filterStatus : true;
     return matchSearch && matchStatus;
   });
@@ -107,17 +118,90 @@ const PeminjamanSaya = () => {
   };
 
   const openPesanModal = (t) => {
-    setSelectedPesan({ judul: t.buku?.judul, pesan: t.pesan_ditolak });
+    const judulBuku = t.details?.[0]?.buku?.judul || '-';
+    setSelectedPesan({ judul: judulBuku, pesan: t.pesan_ditolak });
     setShowPesanModal(true);
   };
   const closePesanModal = () => { setShowPesanModal(false); setSelectedPesan(null); };
+
+  // Badge total denda di kolom
   const DendaBadge = ({ nominal }) => {
     const formatted = formatRupiah(nominal);
     if (!formatted) return <span className="text-xs text-gray-400">—</span>;
     return (
-      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-red-50 text-red-600 text-xs font-semibold border border-red-200">
-        ⚠️ {formatted}
-      </span>
+      <div className="flex flex-col items-center gap-0.5">
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-red-50 text-red-600 text-xs font-semibold border border-red-200">
+          ⚠️ {formatted}
+        </span>
+      </div>
+    );
+  };
+
+  const BukuList = ({ details, tglDeadline, dendaBerjalan }) => {
+    if (!details || details.length === 0) return <span className="text-gray-400 text-xs">—</span>;
+
+    const isOverdue = tglDeadline && new Date() > new Date(tglDeadline);
+    const bukuMasihDipinjam = details.filter(d => d.status === 'dipinjam');
+    const dendaPerBuku = isOverdue && bukuMasihDipinjam.length > 0 && dendaBerjalan
+      ? Math.round(dendaBerjalan / bukuMasihDipinjam.length)
+      : 0;
+
+    return (
+      <div className="flex flex-col gap-3">
+        {details.map((d) => {
+          const coverUrl = getCoverUrl(d.buku?.cover);
+          const detailStatus = getDetailStatusInfo(d.status);
+          const denda = d.denda;
+          const isDendaBelumLunas = denda?.status_pembayaran === 'belum_lunas';
+          const isDendaLunas = denda?.status_pembayaran === 'lunas';
+          const showDendaBerjalan = isOverdue && d.status === 'dipinjam' && dendaPerBuku > 0;
+
+          return (
+            <div key={d.id} className="flex items-start gap-2">
+              {/* Cover */}
+              {coverUrl ? (
+                <img
+                  src={coverUrl} alt={d.buku?.judul}
+                  className="w-10 h-14 object-cover rounded flex-shrink-0"
+                  onError={(e) => { e.target.style.display = 'none'; }}
+                />
+              ) : (
+                <div className="w-10 h-14 bg-gray-200 rounded flex items-center justify-center flex-shrink-0">
+                  <BookOpen size={14} className="text-gray-400" />
+                </div>
+              )}
+
+              {/* Info */}
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-medium text-gray-800 truncate">{d.buku?.judul || '-'}</p>
+                <p className="text-xs text-gray-500 truncate mb-1">{d.buku?.penulis || '-'}</p>
+                <span className={`badge ${detailStatus.badge} badge-xs`}>{detailStatus.label}</span>
+
+                {/* Badge denda berjalan per buku */}
+                {showDendaBerjalan && (
+                  <div className="mt-1.5 inline-flex items-center gap-1 bg-red-50 border border-red-200 text-red-600 text-xs font-semibold px-2 py-0.5 rounded-full ml-1">
+                    ⚠️ {formatRupiah(dendaPerBuku)}
+                  </div>
+                )}
+
+                {/* Badge denda tercatat belum lunas */}
+                {isDendaBelumLunas && (
+                  <div className="mt-1.5 inline-flex items-center gap-1 bg-red-50 border border-red-200 text-red-600 text-xs font-semibold px-2 py-0.5 rounded-full ml-1">
+                    ⚠️ {formatRupiah(denda.nominal)} · Belum Lunas
+                  </div>
+                )}
+
+                {/* Badge denda lunas */}
+                {isDendaLunas && (
+                  <div className="mt-1.5 inline-flex items-center gap-1 bg-green-50 border border-green-200 text-green-600 text-xs font-semibold px-2 py-0.5 rounded-full ml-1">
+                    <CheckCircle size={10} /> {formatRupiah(denda.nominal)} · Lunas
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
     );
   };
 
@@ -157,8 +241,6 @@ const PeminjamanSaya = () => {
             </button>
           </div>
         </div>
-
-        {/* Table / Card */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
           {Pagination({
             currentPage, totalPages, itemsPerPage,
@@ -188,69 +270,47 @@ const PeminjamanSaya = () => {
               <div className="block lg:hidden">
                 <div className="divide-y divide-gray-100">
                   {paginatedTransaksi.map((t) => {
-                    const coverUrl = getCoverUrl(t.buku?.cover);
                     const status = getStatusInfo(t.status);
                     return (
                       <div key={t.id} className="p-3 sm:p-4 hover:bg-gray-50 transition-colors">
-                        <div className="flex gap-3">
-                          {/* Cover */}
-                          <div className="flex-shrink-0">
-                            {coverUrl ? (
-                              <img
-                                src={coverUrl} alt={t.buku?.judul}
-                                className="w-14 h-20 sm:w-16 sm:h-22 object-cover rounded"
-                                onError={(e) => { e.target.style.display = 'none'; }}
-                              />
-                            ) : (
-                              <div className="w-14 h-20 sm:w-16 sm:h-22 bg-gray-200 rounded flex items-center justify-center">
-                                <BookOpen size={16} className="text-gray-400" />
-                              </div>
-                            )}
+                        <div className="flex items-center justify-between mb-2">
+                          <span className={`badge ${status.badge} badge-sm flex items-center gap-0.5`}>
+                            {status.icon} {status.label}
+                          </span>
+                          <span className="text-xs text-gray-500">
+                            Deadline: <span className="font-semibold text-gray-700">{formatDate(t.tgl_deadline)}</span>
+                          </span>
+                        </div>
+                        <BukuList
+                          details={t.details}
+                          tglDeadline={t.tgl_deadline}
+                          dendaBerjalan={t.denda_berjalan}
+                        />
+
+                        {t.denda_berjalan > 0 && (
+                          <div className="mt-2 flex items-center gap-1.5 text-xs text-red-500">
+                            <span className="font-medium">Total denda berjalan:</span>
+                            <span className="font-bold text-red-600">{formatRupiah(t.denda_berjalan)}</span>
                           </div>
+                        )}
 
-                          {/* Info */}
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-start justify-between gap-2">
-                              <h3 className="font-semibold text-sm text-gray-800 leading-tight truncate">
-                                {t.buku?.judul || '-'}
-                              </h3>
-                              <span className={`badge ${status.badge} badge-xs flex-shrink-0 flex items-center gap-0.5`}>
-                                {status.icon} {status.label}
-                              </span>
-                            </div>
-                            <p className="text-xs text-gray-500 mt-0.5">{t.buku?.penulis || '-'}</p>
-
-                            <div className="flex flex-wrap gap-x-3 gap-y-1 mt-2 text-xs text-gray-500">
-                              <span>Deadline: <span className="font-semibold text-gray-700">{formatDate(t.tgl_deadline)}</span></span>
-                            </div>
-
-                            {/* Denda Berjalan */}
-                            {t.denda_berjalan > 0 && (
-                              <div className="mt-2">
-                                <DendaBadge nominal={t.denda_berjalan} />
-                              </div>
-                            )}
-
-                            {/* Action Buttons */}
-                            <div className="mt-2 flex gap-2">
-                              {t.status === 'menunggu' && (
-                                <button
-                                  className="btn btn-xs bg-red-50 text-red-600 hover:bg-red-100 border-red-200"
-                                  onClick={() => openCancelModal(t)}
-                                >
-                                  <XCircle size={13} /> Batalkan
-                                </button>
-                              )}
-                              {t.status === 'ditolak' && t.pesan_ditolak && (
-                                <button
-                                  className="btn btn-xs bg-blue-50 text-blue-600 hover:bg-blue-100 border-blue-200"
-                                  onClick={() => openPesanModal(t)}
-                                >
-                                  <Info size={13} /> Lihat Pesan
-                                </button>
-                              )}
-                            </div>
-                          </div>
+                        <div className="mt-2 flex gap-2">
+                          {t.status === 'menunggu' && (
+                            <button
+                              className="btn btn-xs bg-red-50 text-red-600 hover:bg-red-100 border-red-200"
+                              onClick={() => openCancelModal(t)}
+                            >
+                              <XCircle size={13} /> Batalkan
+                            </button>
+                          )}
+                          {t.status === 'ditolak' && t.pesan_ditolak && (
+                            <button
+                              className="btn btn-xs bg-blue-50 text-blue-600 hover:bg-blue-100 border-blue-200"
+                              onClick={() => openPesanModal(t)}
+                            >
+                              <Info size={13} /> Lihat Pesan
+                            </button>
+                          )}
                         </div>
                       </div>
                     );
@@ -264,9 +324,7 @@ const PeminjamanSaya = () => {
                   <thead>
                     <tr className="bg-white border-b-2 border-gray-200">
                       <th className="w-12 font-semibold text-gray-700">No</th>
-                      <th className="w-20 font-semibold text-gray-700">Cover</th>
-                      <th className="font-semibold text-gray-700">Judul Buku</th>
-                      <th className="font-semibold text-gray-700">Penulis</th>
+                      <th className="font-semibold text-gray-700">Buku Dipinjam</th>
                       <th className="w-32 text-center font-semibold text-gray-700">Deadline</th>
                       <th className="w-28 text-center font-semibold text-gray-700">Status</th>
                       <th className="w-36 text-center font-semibold text-gray-700">Denda Berjalan</th>
@@ -276,39 +334,36 @@ const PeminjamanSaya = () => {
                   </thead>
                   <tbody>
                     {paginatedTransaksi.map((t, index) => {
-                      const coverUrl = getCoverUrl(t.buku?.cover);
                       const status = getStatusInfo(t.status);
                       return (
                         <tr key={t.id} className="border-b border-gray-100 hover:bg-gray-50/50 transition-colors">
-                          <td>{startIndex + index + 1}</td>
-                          <td>
-                            {coverUrl ? (
-                              <img
-                                src={coverUrl} alt={t.buku?.judul}
-                                className="w-12 h-16 object-cover rounded"
-                                onError={(e) => { e.target.style.display = 'none'; }}
-                              />
-                            ) : (
-                              <div className="w-12 h-16 bg-gray-200 rounded flex items-center justify-center">
-                                <BookOpen size={16} className="text-gray-400" />
-                              </div>
-                            )}
+                          <td className="align-top pt-4">{startIndex + index + 1}</td>
+
+                          {/* Kolom buku */}
+                          <td className="py-3">
+                            <BukuList
+                              details={t.details}
+                              tglDeadline={t.tgl_deadline}
+                              dendaBerjalan={t.denda_berjalan}
+                            />
                           </td>
-                          <td className="font-medium text-gray-800">{t.buku?.judul || '-'}</td>
-                          <td className="text-gray-600">{t.buku?.penulis || '-'}</td>
-                          <td className="text-center text-sm text-gray-600">{formatDate(t.tgl_deadline)}</td>
-                          <td className="text-center">
+
+                          <td className="text-center text-sm text-gray-600 align-top pt-4">
+                            {formatDate(t.tgl_deadline)}
+                          </td>
+
+                          <td className="text-center align-top pt-4">
                             <span className={`badge ${status.badge} badge-sm flex items-center gap-1 mx-auto`}>
                               {status.icon} {status.label}
                             </span>
                           </td>
 
-                          {/* Denda Berjalan */}
-                          <td className="text-center">
+                          {/* Kolom total denda berjalan */}
+                          <td className="text-center align-top pt-4">
                             <DendaBadge nominal={t.denda_berjalan} />
                           </td>
 
-                          <td className="text-center">
+                          <td className="text-center align-top pt-4">
                             {t.status === 'ditolak' && t.pesan_ditolak ? (
                               <button
                                 className="btn btn-ghost btn-xs text-blue-600 hover:bg-blue-50 flex items-center gap-1 mx-auto"
@@ -320,7 +375,8 @@ const PeminjamanSaya = () => {
                               <span className="text-xs text-gray-400">—</span>
                             )}
                           </td>
-                          <td>
+
+                          <td className="align-top pt-4">
                             <div className="flex justify-center">
                               {t.status === 'menunggu' ? (
                                 <button
@@ -362,12 +418,16 @@ const PeminjamanSaya = () => {
                 </div>
                 <h3 className="font-bold text-sm sm:text-base text-gray-800">Batalkan Peminjaman?</h3>
               </div>
-              <p className="text-xs sm:text-sm text-gray-600 mb-1">
-                Anda akan membatalkan pengajuan peminjaman buku:
+              <p className="text-xs sm:text-sm text-gray-600 mb-2">
+                Anda akan membatalkan pengajuan peminjaman buku berikut:
               </p>
-              <p className="text-sm font-semibold text-gray-800 mb-4">
-                "{selectedTransaksi.buku?.judul}"
-              </p>
+              <ul className="list-disc list-inside mb-3 space-y-0.5">
+                {selectedTransaksi.details?.map((d) => (
+                  <li key={d.id} className="text-sm font-semibold text-gray-800">
+                    {d.buku?.judul || '-'}
+                  </li>
+                ))}
+              </ul>
               <p className="text-xs text-gray-400">Tindakan ini tidak dapat diulang kembali.</p>
               <div className="modal-action mt-5 flex-col sm:flex-row gap-2">
                 <button

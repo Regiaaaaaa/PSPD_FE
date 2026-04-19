@@ -36,16 +36,16 @@ const YEARS = Array.from({ length: 5 }, (_, i) => currentYear - i);
 
 const STATUS_OPTIONS = [
   { value: "", label: "Semua Status" },
+  { value: "dipinjam", label: "Dipinjam" },
   { value: "kembali", label: "Kembali" },
-  { value: "ditolak", label: "Ditolak" },
 ];
 
 const statusBadge = (status) => {
   switch (status) {
+    case "dipinjam":
+      return <span className="badge badge-warning badge-sm">Dipinjam</span>;
     case "kembali":
       return <span className="badge badge-success badge-sm">Kembali</span>;
-    case "ditolak":
-      return <span className="badge badge-error badge-sm">Ditolak</span>;
     default:
       return <span className="badge badge-ghost badge-sm">{status || "-"}</span>;
   }
@@ -58,6 +58,11 @@ const formatDate = (dateStr) => {
     month: "short",
     year: "numeric",
   });
+};
+
+const getBukuJudul = (buku = []) => {
+  if (!buku || buku.length === 0) return "-";
+  return buku.map((b) => b.judul).join(", ");
 };
 
 export default function LaporanTransaksi() {
@@ -80,9 +85,8 @@ export default function LaporanTransaksi() {
       const params = { bulan: b, tahun: t };
       if (s) params.status = s;
       const res = await getLaporanTransaksi(params);
-      // double safety filter frontend
       const valid = (res.data || []).filter(
-        (item) => item.status === "kembali" || item.status === "ditolak"
+        (item) => item.status === "dipinjam" || item.status === "kembali"
       );
       setData(valid);
     } catch (err) {
@@ -100,8 +104,8 @@ export default function LaporanTransaksi() {
   const filtered = data.filter((item) => {
     const q = searchTerm.toLowerCase();
     return (
-      item.user?.name?.toLowerCase().includes(q) ||
-      item.buku?.judul?.toLowerCase().includes(q) ||
+      item.nama_user?.toLowerCase().includes(q) ||
+      getBukuJudul(item.buku).toLowerCase().includes(q) ||
       item.status?.toLowerCase().includes(q)
     );
   });
@@ -180,7 +184,6 @@ export default function LaporanTransaksi() {
               </div>
             </div>
 
-            {/* Status */}
             <div className="w-full sm:flex-1 sm:w-auto sm:min-w-[130px]">
               <label className="block text-xs font-medium text-gray-600 mb-1.5">Status</label>
               <select
@@ -194,7 +197,6 @@ export default function LaporanTransaksi() {
               </select>
             </div>
 
-            {/* Tombol */}
             <button
               className="btn btn-sm btn-primary gap-2 w-full sm:w-auto sm:px-5"
               onClick={handleTampilkan}
@@ -209,7 +211,6 @@ export default function LaporanTransaksi() {
             </button>
           </div>
 
-          {/* Export */}
           <div className="flex flex-wrap items-center gap-2 mt-3 pt-3 border-t border-gray-100">
             <span className="text-xs text-gray-400">Export:</span>
             <button
@@ -253,18 +254,23 @@ export default function LaporanTransaksi() {
             </div>
           ) : (
             <>
-              {/* Mobile Card View */}
+              {/* Mobile Card */}
               <div className="block lg:hidden divide-y divide-gray-100">
                 {paginated.map((item, idx) => (
                   <div key={item.id} className="p-4">
                     <div className="flex items-start justify-between gap-2 mb-2">
                       <div className="min-w-0">
                         <p className="font-semibold text-sm text-gray-800 truncate">
-                          {item.buku?.judul || "-"}
+                          {getBukuJudul(item.buku)}
                         </p>
                         <p className="text-xs text-gray-500 mt-0.5 truncate">
-                          {item.user?.name || "-"}
+                          {item.nama_user || "-"}
                         </p>
+                        {item.total_buku > 1 && (
+                          <p className="text-[10px] text-blue-500 mt-0.5">
+                            {item.total_buku} buku
+                          </p>
+                        )}
                       </div>
                       <div className="flex-shrink-0 flex flex-col items-end gap-1">
                         <span className="text-xs text-gray-400">#{startIndex + idx + 1}</span>
@@ -272,8 +278,7 @@ export default function LaporanTransaksi() {
                       </div>
                     </div>
 
-                    {/* Tanggal */}
-                    <div className="grid grid-cols-3 gap-2 mt-3">
+                    <div className="grid grid-cols-2 gap-2 mt-3">
                       <div className="bg-gray-50 rounded-lg p-2">
                         <p className="text-[10px] text-gray-400 mb-0.5">Tgl Pinjam</p>
                         <p className="text-xs font-medium text-gray-700 leading-tight">
@@ -284,12 +289,6 @@ export default function LaporanTransaksi() {
                         <p className="text-[10px] text-gray-400 mb-0.5">Deadline</p>
                         <p className="text-xs font-medium text-gray-700 leading-tight">
                           {formatDate(item.tgl_deadline)}
-                        </p>
-                      </div>
-                      <div className="bg-gray-50 rounded-lg p-2">
-                        <p className="text-[10px] text-gray-400 mb-0.5">Tgl Kembali</p>
-                        <p className="text-xs font-medium text-gray-700 leading-tight">
-                          {formatDate(item.tgl_kembali)}
                         </p>
                       </div>
                     </div>
@@ -305,9 +304,9 @@ export default function LaporanTransaksi() {
                       <th className="w-12 font-semibold text-gray-700">No</th>
                       <th className="font-semibold text-gray-700">Peminjam</th>
                       <th className="font-semibold text-gray-700">Judul Buku</th>
+                      <th className="font-semibold text-gray-700">Total Buku</th>
                       <th className="font-semibold text-gray-700">Tgl Pinjam</th>
                       <th className="font-semibold text-gray-700">Deadline</th>
-                      <th className="font-semibold text-gray-700">Tgl Kembali</th>
                       <th className="font-semibold text-gray-700 text-center">Status</th>
                     </tr>
                   </thead>
@@ -319,14 +318,16 @@ export default function LaporanTransaksi() {
                       >
                         <td className="text-sm text-gray-500">{startIndex + idx + 1}</td>
                         <td className="text-sm font-medium text-gray-700">
-                          {item.user?.name || "-"}
+                          {item.nama_user || "-"}
                         </td>
                         <td className="text-sm text-gray-700 max-w-xs truncate">
-                          {item.buku?.judul || "-"}
+                          {getBukuJudul(item.buku)}
+                        </td>
+                        <td className="text-sm text-gray-600 text-center">
+                          {item.total_buku ?? "-"}
                         </td>
                         <td className="text-sm text-gray-600">{formatDate(item.tgl_pinjam)}</td>
                         <td className="text-sm text-gray-600">{formatDate(item.tgl_deadline)}</td>
-                        <td className="text-sm text-gray-600">{formatDate(item.tgl_kembali)}</td>
                         <td className="text-center">{statusBadge(item.status)}</td>
                       </tr>
                     ))}

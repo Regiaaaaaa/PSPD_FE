@@ -16,11 +16,13 @@ export const getMyDenda = async () => {
 
   const data = await res.json();
   if (!res.ok) throw new Error(data.message || "Gagal memuat denda");
-  const transaksiWithDenda = (data.data || []).filter((t) => t.denda);
 
-  return {
-    success: true,
-    data: transaksiWithDenda,
-  };
+
+  const transaksiWithDenda = (data.data || []).filter((t) =>
+    t.details?.some((d) => d.denda)
+  );
+
+  return { success: true, data: transaksiWithDenda };
 };
+
 
