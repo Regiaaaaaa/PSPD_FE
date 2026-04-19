@@ -1,4 +1,3 @@
-// components/TopBar.jsx
 import { useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { logout } from "../services/authService";
@@ -56,6 +55,7 @@ export default function TopBar({ onMenuClick }) {
   const isUserRole = ["staff", "siswa"].includes(user?.role);
   const isOperatorRole = user?.role === "operator";
   const hasNotifFeature = isUserRole || isOperatorRole;
+
   const fetchNotifications = async () => {
     try {
       let res;
@@ -71,7 +71,7 @@ export default function TopBar({ onMenuClick }) {
         setUnreadCount(res.unread_count);
       }
     } catch {
-      // Silent 
+      // Silent
     }
   };
 
@@ -114,37 +114,43 @@ export default function TopBar({ onMenuClick }) {
   };
 
   const handleMarkAsRead = async (id) => {
-    try {
-      if (isOperatorRole) {
-        await markOperatorNotificationAsRead(id);
-      } else {
-        await markNotificationAsRead(id);
-      }
-
-      setNotifications((prev) =>
-        prev.map((n) => (n.id === id ? { ...n, read_at: new Date().toISOString() } : n))
-      );
-      setUnreadCount((prev) => Math.max(0, prev - 1));
-    } catch {
-      toast.error("Gagal menandai notifikasi");
+  try {
+    if (isOperatorRole) {
+      await markOperatorNotificationAsRead(id);
+    } else {
+      await markNotificationAsRead(id);
     }
-  };
 
-  const handleMarkAllRead = async () => {
-    try {
-      if (isOperatorRole) {
-        await markAllOperatorNotificationsRead();
-      } else {
-        await markAllNotificationsRead();
-      }
+    await fetchNotifications();
+    
+    setTimeout(() => {
+      window.location.reload();
+    }, 500); 
 
-      setNotifications((prev) => prev.map((n) => ({ ...n, read_at: new Date().toISOString() })));
-      setUnreadCount(0);
-      toast.success("Semua notifikasi sudah dibaca");
-    } catch {
-      toast.error("Gagal menandai semua notifikasi");
+  } catch {
+    toast.error("Gagal menandai notifikasi");
+  }
+};
+
+ const handleMarkAllRead = async () => {
+  try {
+    if (isOperatorRole) {
+      await markAllOperatorNotificationsRead();
+    } else {
+      await markAllNotificationsRead();
     }
-  };
+
+    await fetchNotifications();
+    toast.success("Semua notifikasi sudah dibaca");
+    
+    setTimeout(() => {
+      window.location.reload();
+    }, 1000); 
+
+  } catch {
+    toast.error("Gagal menandai semua notifikasi");
+  }
+};
 
   // Helper
   const getStatusBadge = (notifData) => {
@@ -173,6 +179,7 @@ export default function TopBar({ onMenuClick }) {
     <header className="bg-white border-b border-gray-200 h-14 flex items-center justify-between px-4 lg:px-6 sticky top-0 z-30">
       {/* Left side */}
       <button
+        type="button"
         onClick={onMenuClick}
         className="lg:hidden p-2 hover:bg-gray-100 rounded-lg transition-colors"
       >
@@ -188,6 +195,7 @@ export default function TopBar({ onMenuClick }) {
         {hasNotifFeature && (
           <div className="relative" ref={notifRef}>
             <button
+              type="button"
               onClick={() => setIsNotifOpen(!isNotifOpen)}
               className="relative p-2 hover:bg-gray-100 rounded-lg transition-colors"
             >
@@ -200,13 +208,18 @@ export default function TopBar({ onMenuClick }) {
             </button>
 
             {isNotifOpen && (
-              <div className="fixed sm:absolute left-2 right-2 sm:left-auto sm:right-0 mt-2 sm:w-80 bg-white rounded-lg shadow-lg border border-gray-200 z-50 overflow-hidden" style={{ top: '3.5rem' }}>
+              <div className="fixed sm:absolute left-2 right-2 sm:left-auto sm:right-0 mt-2 sm:w-80 bg-white rounded-lg shadow-lg border border-gray-200 z-50 overflow-hidden" style={{ top: "3.5rem" }}>
                 {/* Header notif */}
                 <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
                   <span className="text-sm font-semibold text-gray-800">Notifikasi</span>
                   {unreadCount > 0 && (
                     <button
-                      onClick={handleMarkAllRead}
+                      type="button"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        handleMarkAllRead();
+                      }}
                       className="text-xs text-blue-600 hover:underline"
                     >
                       Tandai semua dibaca
@@ -258,12 +271,11 @@ export default function TopBar({ onMenuClick }) {
         {/* User Dropdown */}
         <div className="relative" ref={dropdownRef}>
           <button
+            type="button"
             onClick={() => setIsDropdownOpen(!isDropdownOpen)}
             className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-50 transition-colors"
           >
-            <div
-              className={`w-8 h-8 rounded-full ${roleConfig.avatarBg} flex items-center justify-center`}
-            >
+            <div className={`w-8 h-8 rounded-full ${roleConfig.avatarBg} flex items-center justify-center`}>
               <UserCircle size={20} className={roleConfig.avatarText} />
             </div>
 
@@ -291,6 +303,7 @@ export default function TopBar({ onMenuClick }) {
               <hr className="my-1 border-gray-200" />
 
               <button
+                type="button"
                 onClick={() => {
                   setIsDropdownOpen(false);
                   handleLogout();
