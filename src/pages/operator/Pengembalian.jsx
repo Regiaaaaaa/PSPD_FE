@@ -10,11 +10,12 @@ import DetailPengembalianModal from './components/DetailPengembalianModal';
 const Pengembalian = () => {
   const [transaksi, setTransaksi] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [loadingTerima, setLoadingTerima] = useState(null); // menyimpan detail.id yang sedang diproses
+  const [loadingTerima, setLoadingTerima] = useState(null);
+  const [loadingTerimaAll, setLoadingTerimaAll] = useState(false); 
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [selectedTransaksi, setSelectedTransaksi] = useState(null);
-  const [selectedDetail, setSelectedDetail] = useState(null); // detail yang akan dikembalikan
+  const [selectedDetail, setSelectedDetail] = useState(null); 
   const [activeTab, setActiveTab] = useState('siswa');
   const [searchTerm, setSearchTerm] = useState('');
   const [filterTingkat, setFilterTingkat] = useState('all');
@@ -52,11 +53,16 @@ const Pengembalian = () => {
 
   const handleTerimaClick = (transaksi, detail) => {
     setSelectedTransaksi(transaksi);
-    setSelectedDetail(detail);
+    setSelectedDetail(detail); 
     setShowDetailModal(false);
     setShowConfirmModal(true);
   };
-
+  const handleTerimaAllClick = (transaksi, activeDetails) => {
+    setSelectedTransaksi(transaksi);
+    setSelectedDetail(activeDetails); 
+    setShowDetailModal(false);
+    setShowConfirmModal(true);
+  };
   const handleTerimaConfirm = async () => {
     setShowConfirmModal(false);
     setLoadingTerima(selectedDetail.id);
@@ -72,6 +78,25 @@ const Pengembalian = () => {
       setSelectedDetail(null);
     }
   };
+  const handleTerimaAllConfirm = async () => {
+    if (!Array.isArray(selectedDetail)) return;
+    setShowConfirmModal(false);
+    setLoadingTerimaAll(true);
+    try {
+      for (const detail of selectedDetail) {
+        await terimaPengembalian(detail.id);
+      }
+      toast.success(`${selectedDetail.length} buku berhasil dikembalikan`);
+      fetchPengembalian();
+    } catch (error) {
+      toast.error(error?.message || 'Gagal menerima sebagian pengembalian');
+    } finally {
+      setLoadingTerimaAll(false);
+      setSelectedTransaksi(null);
+      setSelectedDetail(null);
+    }
+  };
+
   const isLate = (tgl_deadline) => {
     if (!tgl_deadline) return false;
     const today = new Date();
@@ -98,7 +123,9 @@ const Pengembalian = () => {
     if (!date) return '-';
     return new Date(date).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
   };
+
   const getActiveDetails = (t) => (t.details || []).filter(d => d.status === 'dipinjam');
+
   const getBukuDisplay = (t) => {
     const active = getActiveDetails(t);
     if (active.length === 0) return { judul: '-', isbn: '', extra: null };
@@ -310,7 +337,6 @@ const Pengembalian = () => {
                               >
                                 <Eye size={15} />
                               </button>
-                              {/* Jika hanya 1 buku aktif */}
                               {activeDetails.length === 1 ? (
                                 <button
                                   className="btn btn-sm bg-green-600 hover:bg-green-700 text-white border-none gap-1 shadow-sm"
@@ -356,7 +382,9 @@ const Pengembalian = () => {
           onClose={() => { setShowDetailModal(false); setSelectedTransaksi(null); }}
           transaksi={selectedTransaksi}
           onTerima={handleTerimaClick}
+          onTerimaAll={handleTerimaAllClick}
           loadingTerima={loadingTerima}
+          loadingTerimaAll={loadingTerimaAll}
           isLate={isLate}
           hitungSelisihHari={hitungSelisihHari}
           getNamaPeminjam={getNamaPeminjam}
@@ -369,19 +397,39 @@ const Pengembalian = () => {
       <ConfirmModal
         isOpen={showConfirmModal}
         onClose={() => { setShowConfirmModal(false); setSelectedTransaksi(null); setSelectedDetail(null); }}
-        onConfirm={handleTerimaConfirm}
+        onConfirm={Array.isArray(selectedDetail) ? handleTerimaAllConfirm : handleTerimaConfirm}
         title="Konfirmasi Pengembalian"
         message={
           selectedDetail && selectedTransaksi ? (
             <div className="space-y-1">
-              <p>Terima pengembalian buku berikut?</p>
-              <p className="font-semibold text-gray-800">{selectedDetail.buku?.judul || '-'}</p>
-              <p className="text-sm text-gray-500">Peminjam: {getNamaPeminjam(selectedTransaksi.user)}</p>
-              {isLate(selectedTransaksi.tgl_deadline) && (
-                <p className="text-sm text-red-600 font-medium mt-2">
-                  ⚠️ Terlambat {hitungSelisihHari(selectedTransaksi.tgl_deadline)} hari · Estimasi denda Rp{' '}
-                  {(hitungSelisihHari(selectedTransaksi.tgl_deadline) * 1000).toLocaleString('id-ID')}
-                </p>
+              {Array.isArray(selectedDetail) ? (
+                <>
+                  <p>Terima pengembalian <span className="font-semibold">{selectedDetail.length} buku</span> sekaligus?</p>
+                  <ul className="text-sm text-gray-600 list-disc list-inside mt-1">
+                    {selectedDetail.map(d => (
+                      <li key={d.id} className="line-clamp-1">{d.buku?.judul || '-'}</li>
+                    ))}
+                  </ul>
+                  <p className="text-sm text-gray-500 mt-1">Peminjam: {getNamaPeminjam(selectedTransaksi.user)}</p>
+                  {isLate(selectedTransaksi.tgl_deadline) && (
+                    <p className="text-sm text-red-600 font-medium mt-2">
+                      ⚠️ Terlambat {hitungSelisihHari(selectedTransaksi.tgl_deadline)} hari · Total estimasi denda Rp{' '}
+                      {(hitungSelisihHari(selectedTransaksi.tgl_deadline) * 1000 * selectedDetail.length).toLocaleString('id-ID')}
+                    </p>
+                  )}
+                </>
+              ) : (
+                <>
+                  <p>Terima pengembalian buku berikut?</p>
+                  <p className="font-semibold text-gray-800">{selectedDetail.buku?.judul || '-'}</p>
+                  <p className="text-sm text-gray-500">Peminjam: {getNamaPeminjam(selectedTransaksi.user)}</p>
+                  {isLate(selectedTransaksi.tgl_deadline) && (
+                    <p className="text-sm text-red-600 font-medium mt-2">
+                      ⚠️ Terlambat {hitungSelisihHari(selectedTransaksi.tgl_deadline)} hari · Estimasi denda Rp{' '}
+                      {(hitungSelisihHari(selectedTransaksi.tgl_deadline) * 1000).toLocaleString('id-ID')}
+                    </p>
+                  )}
+                </>
               )}
             </div>
           ) : ''

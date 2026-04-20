@@ -1,13 +1,255 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import toast from 'react-hot-toast';
 import {
-  BookOpen, X, Clock, Book, AlertTriangle,
-  ShoppingCart, Trash2, Plus, CheckCircle, ChevronRight, Info
+  BookOpen, Clock, Book, AlertTriangle,
+  ShoppingCart, CheckCircle, Plus, Info,
 } from 'lucide-react';
 import { getAllBooks } from '../../services/users/katalogService';
 import { ajukanPeminjaman, cekDendaAktif, getMyTransaksi } from '../../services/users/transaksiService';
 import AppLayout from '../../components/AppLayout';
 import Pagination from '../../components/common/Pagination';
+import KeranjangDrawer from './components/KeranjangDrawer';
+
+const StockStatus = ({ stok }) => {
+  if (stok > 3) return (
+    <div className="flex items-center gap-1.5 text-emerald-600">
+      <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+      <span className="text-xs font-semibold">{stok} Tersedia</span>
+    </div>
+  );
+  if (stok > 0) return (
+    <div className="flex items-center gap-1.5 text-amber-600">
+      <div className="w-2 h-2 rounded-full bg-amber-500" />
+      <span className="text-xs font-semibold">{stok} Tersisa</span>
+    </div>
+  );
+  return (
+    <div className="flex items-center gap-1.5 text-red-500">
+      <div className="w-2 h-2 rounded-full bg-red-400" />
+      <span className="text-xs font-semibold">Habis</span>
+    </div>
+  );
+};
+
+const DendaBanner = ({ dendaLoading, isBlocked, isBukuTelat, dendaInfo, allTransaksi, formatRupiah }) => {
+  if (dendaLoading || !isBlocked) return null;
+  const semuaDendaBelumLunas = [];
+  (allTransaksi || []).forEach((t) => {
+    (t.details || []).forEach((d) => {
+      if (d.denda && d.denda.status_pembayaran === 'belum_lunas') {
+        semuaDendaBelumLunas.push({
+          nominal: d.denda.nominal || 0,
+          judul: d.buku?.judul || null,
+        });
+      }
+    });
+  });
+
+  const totalDenda  = semuaDendaBelumLunas.reduce((sum, d) => sum + d.nominal, 0);
+  const totalBuku   = semuaDendaBelumLunas.length;
+  const nominalFallback = dendaInfo?.denda?.nominal || 0;
+
+  if (isBukuTelat) {
+    const judulBuku = dendaInfo?.denda?.judul_buku;
+    const nominal   = dendaInfo?.denda?.nominal;
+    return (
+      <div className="mb-3 flex items-start gap-2 px-3 py-2 bg-amber-50 border border-amber-200 rounded-lg">
+        <AlertTriangle size={13} className="text-amber-500 flex-shrink-0 mt-0.5" />
+        <p className="text-xs text-amber-700 leading-relaxed">
+          <span className="font-semibold">Tidak bisa meminjam</span>
+          {' '}· buku telat dikembalikan
+          {judulBuku && <> · <span className="font-medium">"{judulBuku}"</span></>}
+          {nominal > 0 && <> · denda berjalan <span className="font-semibold">{formatRupiah(nominal)}</span></>}
+          {' '}· Kembalikan dulu untuk bisa meminjam lagi.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mb-3 flex items-start gap-2 px-3 py-2 bg-amber-50 border border-amber-200 rounded-lg">
+      <AlertTriangle size={13} className="text-amber-500 flex-shrink-0 mt-0.5" />
+      <p className="text-xs text-amber-700 leading-relaxed">
+        <span className="font-semibold">Tidak bisa meminjam</span>
+        {' '}· anda masih mempunyai denda{' '}
+        <span className="font-semibold">{totalBuku > 0 ? totalBuku : 1} buku</span>
+        {' '}dengan total{' '}
+        <span className="font-semibold">{formatRupiah(totalBuku > 0 ? totalDenda : nominalFallback)}</span>
+        {' '}yang belum dibayarkan · Selesaikan pembayaran untuk meminjam lagi.
+      </p>
+    </div>
+  );
+};
+
+const PinjamanAktifBanner = ({ hasPinjamanAktif, isBlocked, pinjamanMenunggu, pinjamanDipinjam }) => {
+  if (!hasPinjamanAktif || isBlocked) return null;
+
+  if (pinjamanMenunggu.length > 0 && pinjamanDipinjam.length === 0) {
+    const jumlahBuku = pinjamanMenunggu.reduce((acc, t) => acc + (t.details?.length || 0), 0);
+    return (
+      <div className="mb-3 flex items-start gap-2 px-3 py-2 bg-blue-50 border border-blue-200 rounded-lg">
+        <Info size={13} className="text-blue-500 flex-shrink-0 mt-0.5" />
+        <p className="text-xs text-blue-700">
+          <span className="font-semibold">Pengajuan diverifikasi</span>
+          {' '}· <span className="font-medium">{jumlahBuku} buku</span> menunggu persetujuan operator.
+          Tidak bisa mengajukan peminjaman sementara.
+        </p>
+      </div>
+    );
+  }
+
+  if (pinjamanDipinjam.length > 0) {
+    const jumlahBukuDipinjam = pinjamanDipinjam.reduce(
+      (acc, t) => acc + (t.details?.filter((d) => d.status === 'dipinjam').length || 0), 0
+    );
+    const deadlineStr = pinjamanDipinjam[0]?.tgl_deadline;
+    const istelat     = deadlineStr && new Date() > new Date(deadlineStr);
+
+    return (
+      <div className={`mb-3 flex items-start gap-2 px-3 py-2 border rounded-lg ${istelat ? 'bg-red-50 border-red-200' : 'bg-blue-50 border-blue-200'}`}>
+        <Info size={13} className={`flex-shrink-0 mt-0.5 ${istelat ? 'text-red-500' : 'text-blue-500'}`} />
+        <p className={`text-xs leading-relaxed ${istelat ? 'text-red-700' : 'text-blue-700'}`}>
+          <span className="font-semibold">{istelat ? 'Buku melewati batas pengembalian' : 'Masih ada buku dipinjam'}</span>
+          {' '}· <span className="font-medium">{jumlahBukuDipinjam} buku</span>
+          {deadlineStr && (
+            <> · deadline{' '}
+              <span className="font-medium">
+                {new Date(deadlineStr).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
+              </span>
+            </>
+          )}
+          {' '}· Kembalikan semua buku untuk meminjam lagi.
+          {pinjamanMenunggu.length > 0 && (
+            <> +{pinjamanMenunggu.reduce((acc, t) => acc + (t.details?.length || 0), 0)} buku menunggu verifikasi.</>
+          )}
+        </p>
+      </div>
+    );
+  }
+
+  return null;
+};
+
+const BookCard = ({
+  book, cart, cannotBorrow, hasPinjamanAktif, isBlocked, isBukuTelat,
+  transaksiAktif, addToCart, openDetailModal, getCoverUrl,
+}) => {
+  const isInCart         = cart.some((c) => c.buku_id === book.id);
+  const isSedangMenunggu = transaksiAktif.some(
+    (t) => t.status === 'menunggu' && t.details?.some((d) => d.buku_id === book.id)
+  );
+  const isSedangDipinjam = transaksiAktif.some(
+    (t) => t.status === 'dipinjam' && t.details?.some((d) => d.buku_id === book.id)
+  );
+  const coverUrl  = getCoverUrl(book.cover);
+  const habis     = book.stok_tersedia < 1;
+  const cartFull  = cart.length >= 3 && !isInCart;
+  const blocked   = cannotBorrow || habis || isSedangDipinjam || isSedangMenunggu || cartFull;
+
+  return (
+    <div className="group relative bg-white rounded-xl overflow-hidden shadow-md hover:shadow-2xl transition-all duration-300">
+      <div
+        className="relative overflow-hidden h-52 sm:h-56 lg:h-64 cursor-pointer"
+        onClick={() => openDetailModal(book)}
+      >
+        {coverUrl ? (
+          <img
+            src={coverUrl}
+            alt={book.judul}
+            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+            onError={(e) => {
+              e.target.style.display = 'none';
+              e.target.parentElement.classList.add('bg-gradient-to-br', 'from-gray-200', 'to-gray-300');
+            }}
+          />
+        ) : (
+          <div className="w-full h-full bg-gradient-to-br from-blue-100 to-blue-200 flex items-center justify-center">
+            <BookOpen size={40} className="text-blue-400 opacity-50" />
+          </div>
+        )}
+
+        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent opacity-80 group-hover:opacity-90 transition-opacity duration-300" />
+
+        <div className="absolute inset-0 p-3 flex flex-col justify-end text-white">
+          {book.kategori && (
+            <div className="mb-1.5">
+              <span className="inline-block px-2 py-0.5 bg-blue-500/90 backdrop-blur-sm rounded-full text-xs font-semibold">
+                {book.kategori.nama_kategori}
+              </span>
+            </div>
+          )}
+          <h3 className="text-sm font-bold leading-tight mb-1.5 group-hover:text-blue-300 transition-colors duration-200 line-clamp-2">
+            {book.judul}
+          </h3>
+          {book.penulis && (
+            <p className="text-xs opacity-80 line-clamp-1 mb-2">
+              <span className="opacity-70">Penulis:</span> {book.penulis}
+            </p>
+          )}
+          <div className="flex items-center justify-between gap-2 pt-2 border-t border-white/20">
+            <StockStatus stok={book.stok_tersedia} />
+            {book.tahun_terbit && (
+              <div className="flex items-center gap-1 text-white/80">
+                <Clock size={12} />
+                <span className="text-xs font-medium">{book.tahun_terbit}</span>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {isInCart && (
+          <div className="absolute top-2 right-2 bg-blue-600 text-white rounded-full p-1 shadow-lg">
+            <CheckCircle size={14} />
+          </div>
+        )}
+        {isSedangMenunggu && !isInCart && (
+          <div className="absolute top-2 right-2 flex items-center gap-1 bg-black/40 backdrop-blur-sm rounded-full px-2 py-0.5">
+            <div className="w-1.5 h-1.5 rounded-full bg-yellow-400" />
+            <span className="text-white/80 text-xs">Menunggu</span>
+          </div>
+        )}
+        {isSedangDipinjam && !isInCart && !isSedangMenunggu && (
+          <div className="absolute top-2 right-2 flex items-center gap-1 bg-black/40 backdrop-blur-sm rounded-full px-2 py-0.5">
+            <div className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+            <span className="text-white/80 text-xs">Dipinjam</span>
+          </div>
+        )}
+      </div>
+
+      <div className="p-2">
+        <button
+          onClick={() => addToCart(book)}
+          disabled={blocked}
+          className={`w-full flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-semibold transition-all duration-200
+            ${isInCart
+              ? 'bg-blue-50 text-blue-600 border border-blue-200 hover:bg-blue-100'
+              : isSedangMenunggu
+                ? 'bg-yellow-50 text-yellow-600 border border-yellow-200 cursor-not-allowed'
+                : isSedangDipinjam
+                  ? 'bg-gray-50 text-gray-400 border border-gray-200 cursor-not-allowed'
+                  : cartFull
+                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                    : hasPinjamanAktif
+                      ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                      : blocked
+                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                        : 'bg-blue-600 text-white hover:bg-blue-700 active:scale-95'
+            }`}
+        >
+          {isInCart            ? <><CheckCircle size={13} /> Ada di Keranjang</>
+           : isSedangMenunggu  ? <span>Menunggu Persetujuan</span>
+           : isSedangDipinjam  ? <span>Sedang Dipinjam</span>
+           : cartFull          ? <span>Keranjang Penuh (maks. 3)</span>
+           : hasPinjamanAktif  ? <span>Ada Pinjaman Aktif</span>
+           : isBlocked         ? <span>Tidak Dapat Dipinjam</span>
+           : habis             ? <>Stok Habis</>
+           :                     <><Plus size={13} /> Tambah ke Keranjang</>}
+        </button>
+      </div>
+    </div>
+  );
+};
+
 
 const KatalogBuku = () => {
   const [books, setBooks] = useState([]);
@@ -24,6 +266,7 @@ const KatalogBuku = () => {
   const [dendaInfo, setDendaInfo] = useState(null);
   const [dendaLoading, setDendaLoading] = useState(true);
   const [transaksiAktif, setTransaksiAktif] = useState([]);
+  const [allTransaksi, setAllTransaksi] = useState([]);
 
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [selectedBook, setSelectedBook] = useState(null);
@@ -36,19 +279,32 @@ const KatalogBuku = () => {
 
   const todayStr = new Date().toISOString().split('T')[0];
 
-  const isBlocked   = dendaInfo?.ada_denda === true;
-  const isBukuTelat = dendaInfo?.tipe === 'buku_telat';
-  const hasPinjamanAktif = transaksiAktif.length > 0;
-  const pinjamanMenunggu = transaksiAktif.filter(t => t.status === 'menunggu');
-  const pinjamanDipinjam = transaksiAktif.filter(t => t.status === 'dipinjam');
-  const cannotBorrow = isBlocked || hasPinjamanAktif;
+  const isBlocked         = dendaInfo?.ada_denda === true;
+  const isBukuTelat       = dendaInfo?.tipe === 'buku_telat';
+  const hasPinjamanAktif  = transaksiAktif.length > 0;
+  const pinjamanMenunggu  = transaksiAktif.filter((t) => t.status === 'menunggu');
+  const pinjamanDipinjam  = transaksiAktif.filter((t) => t.status === 'dipinjam');
+  const cannotBorrow      = isBlocked || hasPinjamanAktif;
+
+  const formatRupiah = (nominal) =>
+    new Intl.NumberFormat('id-ID', {
+      style: 'currency', currency: 'IDR', minimumFractionDigits: 0,
+    }).format(nominal);
+
+  const getCoverUrl = (coverPath) => {
+    if (!coverPath) return null;
+    if (coverPath.startsWith('http')) return coverPath;
+    return coverPath.startsWith('storage/') ? `/${coverPath}` : `/storage/${coverPath}`;
+  };
 
   const fetchTransaksiAktif = useCallback(async () => {
     try {
       const data = await getMyTransaksi();
-      const aktif = (data.data || []).filter(
+      const semua = data.data || [];
+      const aktif = semua.filter(
         (t) => t.status === 'menunggu' || t.status === 'dipinjam'
       );
+      setAllTransaksi(semua);
       setTransaksiAktif(aktif);
     } catch {
       // silent
@@ -100,8 +356,8 @@ const KatalogBuku = () => {
     try {
       const params = {};
       if (filterKategori) params.kategori_id = filterKategori;
-      if (filterTahun) params.tahun = filterTahun;
-      if (sortBy) params.sort = sortBy;
+      if (filterTahun)    params.tahun = filterTahun;
+      if (sortBy)         params.sort = sortBy;
       const data = await getAllBooks(params);
       setBooks(data.data || []);
     } catch (error) {
@@ -114,12 +370,6 @@ const KatalogBuku = () => {
   useEffect(() => { fetchBooks(); }, [fetchBooks]);
   useEffect(() => { setCurrentPage(1); }, [filterKategori, filterTahun, sortBy]);
 
-  const getCoverUrl = (coverPath) => {
-    if (!coverPath) return null;
-    if (coverPath.startsWith('http')) return coverPath;
-    return coverPath.startsWith('storage/') ? `/${coverPath}` : `/storage/${coverPath}`;
-  };
-
   const resetFilters = () => {
     setSearchTerm('');
     setFilterKategori('');
@@ -129,9 +379,6 @@ const KatalogBuku = () => {
   };
 
   const hasActiveFilter = searchTerm || filterKategori || filterTahun || sortBy;
-
-  const formatRupiah = (nominal) =>
-    new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(nominal);
 
   const filteredBooks = useMemo(() => {
     return books.filter((book) => {
@@ -147,24 +394,16 @@ const KatalogBuku = () => {
     });
   }, [books, searchTerm]);
 
-  const totalPages = Math.ceil(filteredBooks.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
+  const totalPages     = Math.ceil(filteredBooks.length / itemsPerPage);
+  const startIndex     = (currentPage - 1) * itemsPerPage;
   const paginatedBooks = filteredBooks.slice(startIndex, startIndex + itemsPerPage);
-  const goToPage = (page) => { if (page >= 1 && page <= totalPages) setCurrentPage(page); };
+  const goToPage       = (page) => { if (page >= 1 && page <= totalPages) setCurrentPage(page); };
 
-  const isInCart = (bukuId) => cart.some((c) => c.buku_id === bukuId);
-
+  const isInCart         = (bukuId) => cart.some((c) => c.buku_id === bukuId);
   const isSedangMenunggu = (bukuId) =>
-    transaksiAktif.some((t) =>
-      t.status === 'menunggu' &&
-      t.details?.some((d) => d.buku_id === bukuId)
-    );
-
+    transaksiAktif.some((t) => t.status === 'menunggu' && t.details?.some((d) => d.buku_id === bukuId));
   const isSedangDipinjam = (bukuId) =>
-    transaksiAktif.some((t) =>
-      t.status === 'dipinjam' &&
-      t.details?.some((d) => d.buku_id === bukuId)
-    );
+    transaksiAktif.some((t) => t.status === 'dipinjam' && t.details?.some((d) => d.buku_id === bukuId));
 
   const addToCart = (book) => {
     if (hasPinjamanAktif) {
@@ -179,18 +418,15 @@ const KatalogBuku = () => {
       );
       return;
     }
-    if (book.stok_tersedia < 1) { toast.error('Stok buku habis!'); return; }
-    if (isSedangDipinjam(book.id)) { toast.error('Kamu masih meminjam buku ini.'); return; }
-    if (isSedangMenunggu(book.id)) { toast.error('Peminjaman buku ini masih menunggu persetujuan.'); return; }
+    if (book.stok_tersedia < 1)          { toast.error('Stok buku habis!'); return; }
+    if (isSedangDipinjam(book.id))       { toast.error('Kamu masih meminjam buku ini.'); return; }
+    if (isSedangMenunggu(book.id))       { toast.error('Peminjaman buku ini masih menunggu persetujuan.'); return; }
     if (isInCart(book.id)) {
       toast('Buku sudah ada di keranjang', { icon: '📚' });
-      setShowDrawer(true);
       return;
     }
-    if (cart.length >= 3) {
-      toast.error('Maksimal 3 buku per pengajuan.');
-      return;
-    }
+    if (cart.length >= 3)                { toast.error('Maksimal 3 buku per pengajuan.'); return; }
+
     setCart((prev) => [
       ...prev,
       {
@@ -202,10 +438,10 @@ const KatalogBuku = () => {
       },
     ]);
     toast.success(`"${book.judul}" ditambahkan ke keranjang`);
-    setShowDrawer(true);
   };
 
-  const removeFromCart = (bukuId) => setCart((prev) => prev.filter((c) => c.buku_id !== bukuId));
+  const removeFromCart = (bukuId) =>
+    setCart((prev) => prev.filter((c) => c.buku_id !== bukuId));
 
   const handleSubmitKeranjang = async () => {
     if (hasPinjamanAktif) {
@@ -242,423 +478,8 @@ const KatalogBuku = () => {
     }
   };
 
-  const openDetailModal = (book) => { setSelectedBook(book); setShowDetailModal(true); };
+  const openDetailModal  = (book) => { setSelectedBook(book); setShowDetailModal(true); };
   const closeDetailModal = () => { setShowDetailModal(false); setSelectedBook(null); };
-
-  const StockStatus = ({ stok }) => {
-    if (stok > 3) return (
-      <div className="flex items-center gap-1.5 text-emerald-600">
-        <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-        <span className="text-xs font-semibold">{stok} Tersedia</span>
-      </div>
-    );
-    if (stok > 0) return (
-      <div className="flex items-center gap-1.5 text-amber-600">
-        <div className="w-2 h-2 rounded-full bg-amber-500" />
-        <span className="text-xs font-semibold">{stok} Tersisa</span>
-      </div>
-    );
-    return (
-      <div className="flex items-center gap-1.5 text-red-500">
-        <div className="w-2 h-2 rounded-full bg-red-400" />
-        <span className="text-xs font-semibold">Habis</span>
-      </div>
-    );
-  };
-
-  // Banner denda
-  const DendaBanner = () => {
-    if (dendaLoading || !isBlocked) return null;
-    return (
-      <div className="mb-3 flex items-center gap-2.5 px-4 py-2.5 bg-amber-50 border border-amber-200 rounded-lg">
-        <AlertTriangle size={14} className="text-amber-500 flex-shrink-0" />
-        {isBukuTelat ? (
-          <p className="text-xs text-amber-700">
-            Buku{dendaInfo?.denda?.judul_buku ? <> <span className="font-medium">"{dendaInfo.denda.judul_buku}"</span></> : ''} sudah melewati batas pengembalian
-            {dendaInfo?.denda?.nominal > 0 && <> · denda berjalan <span className="font-semibold">{formatRupiah(dendaInfo.denda.nominal)}</span></>}.
-            {' '}Kembalikan buku tersebut untuk bisa meminjam kembali.
-          </p>
-        ) : (
-          <p className="text-xs text-amber-700">
-            Kamu memiliki denda{' '}
-            <span className="font-semibold">{formatRupiah(dendaInfo?.denda?.nominal)}</span>
-            {dendaInfo?.denda?.judul_buku && <> dari <span className="font-medium">"{dendaInfo.denda.judul_buku}"</span></>}.
-            {' '}Selesaikan pembayaran untuk bisa meminjam kembali.
-          </p>
-        )}
-      </div>
-    );
-  };
-
-  const PinjamanAktifBanner = () => {
-    if (!hasPinjamanAktif || isBlocked) return null;
-
-    const jumlahBukuAktif = transaksiAktif.reduce((acc, t) => {
-      return acc + (t.details?.filter(d => d.status === 'dipinjam' || t.status === 'menunggu').length || 0);
-    }, 0);
-
-    if (pinjamanMenunggu.length > 0 && pinjamanDipinjam.length === 0) {
-      const jumlahBuku = pinjamanMenunggu.reduce((acc, t) => acc + (t.details?.length || 0), 0);
-      return (
-        <div className="mb-3 flex items-start gap-2.5 px-4 py-3 bg-blue-50 border border-blue-200 rounded-lg">
-          <Info size={14} className="text-blue-500 flex-shrink-0 mt-0.5" />
-          <div>
-            <p className="text-xs font-semibold text-blue-700 mb-0.5">Peminjaman Sedang Diverifikasi</p>
-            <p className="text-xs text-blue-600">
-              Kamu memiliki pengajuan <span className="font-medium">{jumlahBuku} buku</span> yang sedang menunggu persetujuan operator.
-              Kamu baru bisa mengajukan peminjaman baru setelah pengajuan ini diproses.
-            </p>
-          </div>
-        </div>
-      );
-    }
-
-    if (pinjamanDipinjam.length > 0) {
-      const jumlahBukuDipinjam = pinjamanDipinjam.reduce((acc, t) => {
-        return acc + (t.details?.filter(d => d.status === 'dipinjam').length || 0);
-      }, 0);
-      const deadlineStr = pinjamanDipinjam[0]?.tgl_deadline;
-      const istelat = deadlineStr && new Date() > new Date(deadlineStr);
-
-      return (
-        <div className={`mb-3 flex items-start gap-2.5 px-4 py-3 border rounded-lg ${istelat ? 'bg-red-50 border-red-200' : 'bg-blue-50 border-blue-200'}`}>
-          <Info size={14} className={`flex-shrink-0 mt-0.5 ${istelat ? 'text-red-500' : 'text-blue-500'}`} />
-          <div>
-            <p className={`text-xs font-semibold mb-0.5 ${istelat ? 'text-red-700' : 'text-blue-700'}`}>
-              {istelat ? 'Buku Melewati Batas Pengembalian' : 'Masih Ada Buku Dipinjam'}
-            </p>
-            <p className={`text-xs ${istelat ? 'text-red-600' : 'text-blue-600'}`}>
-              Kamu masih meminjam <span className="font-medium">{jumlahBukuDipinjam} buku</span>
-              {deadlineStr && (
-                <> · deadline{' '}
-                  <span className={`font-medium ${istelat ? 'text-red-700' : ''}`}>
-                    {new Date(deadlineStr).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
-                  </span>
-                </>
-              )}.
-              {' '}Kembalikan semua buku terlebih dahulu untuk bisa meminjam lagi.
-            </p>
-            {pinjamanMenunggu.length > 0 && (
-              <p className="text-xs text-blue-500 mt-1">
-                + {pinjamanMenunggu.reduce((acc, t) => acc + (t.details?.length || 0), 0)} buku lainnya masih menunggu verifikasi.
-              </p>
-            )}
-          </div>
-        </div>
-      );
-    }
-
-    return null;
-  };
-
-  const BookCard = ({ book }) => {
-    const coverUrl       = getCoverUrl(book.cover);
-    const inCart         = isInCart(book.id);
-    const habis          = book.stok_tersedia < 1;
-    const isMenunggu     = isSedangMenunggu(book.id);
-    const sedangDipinjam = isSedangDipinjam(book.id);
-    const cartFull       = cart.length >= 3 && !inCart;
-    const blocked        = cannotBorrow || habis || sedangDipinjam || isMenunggu || cartFull;
-
-    return (
-      <div className="group relative bg-white rounded-xl overflow-hidden shadow-md hover:shadow-2xl transition-all duration-300">
-        <div
-          className="relative overflow-hidden h-52 sm:h-56 lg:h-64 cursor-pointer"
-          onClick={() => openDetailModal(book)}
-        >
-          {coverUrl ? (
-            <img
-              src={coverUrl}
-              alt={book.judul}
-              className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-              onError={(e) => {
-                e.target.style.display = 'none';
-                e.target.parentElement.classList.add('bg-gradient-to-br', 'from-gray-200', 'to-gray-300');
-              }}
-            />
-          ) : (
-            <div className="w-full h-full bg-gradient-to-br from-blue-100 to-blue-200 flex items-center justify-center">
-              <BookOpen size={40} className="text-blue-400 opacity-50" />
-            </div>
-          )}
-
-          <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent opacity-80 group-hover:opacity-90 transition-opacity duration-300" />
-
-          <div className="absolute inset-0 p-3 flex flex-col justify-end text-white">
-            {book.kategori && (
-              <div className="mb-1.5">
-                <span className="inline-block px-2 py-0.5 bg-blue-500/90 backdrop-blur-sm rounded-full text-xs font-semibold">
-                  {book.kategori.nama_kategori}
-                </span>
-              </div>
-            )}
-            <h3 className="text-sm font-bold leading-tight mb-1.5 group-hover:text-blue-300 transition-colors duration-200 line-clamp-2">
-              {book.judul}
-            </h3>
-            {book.penulis && (
-              <p className="text-xs opacity-80 line-clamp-1 mb-2">
-                <span className="opacity-70">Penulis:</span> {book.penulis}
-              </p>
-            )}
-            <div className="flex items-center justify-between gap-2 pt-2 border-t border-white/20">
-              <StockStatus stok={book.stok_tersedia} />
-              {book.tahun_terbit && (
-                <div className="flex items-center gap-1 text-white/80">
-                  <Clock size={12} />
-                  <span className="text-xs font-medium">{book.tahun_terbit}</span>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {inCart && (
-            <div className="absolute top-2 right-2 bg-blue-600 text-white rounded-full p-1 shadow-lg">
-              <CheckCircle size={14} />
-            </div>
-          )}
-
-          {isMenunggu && !inCart && (
-            <div className="absolute top-2 right-2 flex items-center gap-1 bg-black/40 backdrop-blur-sm rounded-full px-2 py-0.5">
-              <div className="w-1.5 h-1.5 rounded-full bg-yellow-400" />
-              <span className="text-white/80 text-xs">Menunggu</span>
-            </div>
-          )}
-
-          {sedangDipinjam && !inCart && !isMenunggu && (
-            <div className="absolute top-2 right-2 flex items-center gap-1 bg-black/40 backdrop-blur-sm rounded-full px-2 py-0.5">
-              <div className="w-1.5 h-1.5 rounded-full bg-amber-400" />
-              <span className="text-white/80 text-xs">Dipinjam</span>
-            </div>
-          )}
-        </div>
-
-        <div className="p-2">
-          <button
-            onClick={() => addToCart(book)}
-            disabled={blocked}
-            className={`w-full flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-semibold transition-all duration-200
-              ${inCart
-                ? 'bg-blue-50 text-blue-600 border border-blue-200 hover:bg-blue-100'
-                : isMenunggu
-                  ? 'bg-yellow-50 text-yellow-600 border border-yellow-200 cursor-not-allowed'
-                  : sedangDipinjam
-                    ? 'bg-gray-50 text-gray-400 border border-gray-200 cursor-not-allowed'
-                    : cartFull
-                      ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                      : hasPinjamanAktif
-                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                        : blocked
-                          ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                          : 'bg-blue-600 text-white hover:bg-blue-700 active:scale-95'
-              }`}
-          >
-            {inCart ? (
-              <><CheckCircle size={13} /> Ada di Keranjang</>
-            ) : isMenunggu ? (
-              <span className="text-yellow-600">Menunggu Persetujuan</span>
-            ) : sedangDipinjam ? (
-              <span className="text-gray-400">Sedang Dipinjam</span>
-            ) : cartFull ? (
-              <span className="text-gray-400">Keranjang Penuh (maks. 3)</span>
-            ) : hasPinjamanAktif ? (
-              <span className="text-gray-400">Ada Pinjaman Aktif</span>
-            ) : isBlocked ? (
-              <span className="text-gray-400">Tidak Dapat Dipinjam</span>
-            ) : habis ? (
-              <>Stok Habis</>
-            ) : (
-              <><Plus size={13} /> Tambah ke Keranjang</>
-            )}
-          </button>
-        </div>
-      </div>
-    );
-  };
-
-  const KeranjangDrawer = () => {
-    const readyToSubmit = cart.length > 0 && !!tglDeadline;
-
-    return (
-      <>
-        {showDrawer && (
-          <div
-            className="fixed inset-0 bg-black/30 backdrop-blur-sm z-[1000]"
-            onClick={() => setShowDrawer(false)}
-          />
-        )}
-
-        <div
-          className={`fixed top-0 right-0 h-full w-full sm:w-[420px] bg-white shadow-2xl z-[1001] flex flex-col transition-transform duration-300 ease-in-out
-            ${showDrawer ? 'translate-x-0' : 'translate-x-full'}`}
-        >
-          {/* Header */}
-          <div className="flex items-center justify-between px-4 sm:px-5 py-4 border-b border-gray-100 flex-shrink-0">
-            <div className="flex items-center gap-2">
-              <ShoppingCart size={18} className="text-blue-600" />
-              <h2 className="font-bold text-gray-900 text-base">Keranjang Peminjaman</h2>
-              {cart.length > 0 && (
-                <span className="bg-blue-600 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
-                  {cart.length}
-                </span>
-              )}
-            </div>
-            <button
-              onClick={() => setShowDrawer(false)}
-              className="w-8 h-8 rounded-full hover:bg-gray-100 flex items-center justify-center text-gray-500 transition-colors"
-            >
-              <X size={16} />
-            </button>
-          </div>
-
-          {/* Body */}
-          <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4 min-h-0">
-            {cart.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-full text-center pb-10">
-                <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mb-3">
-                  <ShoppingCart size={28} className="text-gray-300" />
-                </div>
-                <p className="font-semibold text-gray-500 text-sm">Keranjang masih kosong</p>
-                <p className="text-xs text-gray-400 mt-1">Tambahkan buku dari katalog</p>
-              </div>
-            ) : (
-              <>
-                {/* Daftar buku di keranjang */}
-                <div className="space-y-2">
-                  {cart.map((item) => {
-                    const coverUrl = getCoverUrl(item.cover);
-                    return (
-                      <div key={item.buku_id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl border border-gray-200">
-                        <div className="w-9 h-9 rounded-lg overflow-hidden flex-shrink-0 bg-blue-100 flex items-center justify-center">
-                          {coverUrl ? (
-                            <img src={coverUrl} alt={item.judul} className="w-full h-full object-cover" />
-                          ) : (
-                            <BookOpen size={16} className="text-blue-400" />
-                          )}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-semibold text-gray-900 line-clamp-1">{item.judul}</p>
-                          {item.penulis && <p className="text-xs text-gray-500 line-clamp-1">{item.penulis}</p>}
-                        </div>
-                        <button
-                          onClick={() => removeFromCart(item.buku_id)}
-                          className="w-7 h-7 rounded-full hover:bg-red-50 flex items-center justify-center text-gray-400 hover:text-red-500 transition-colors flex-shrink-0"
-                        >
-                          <Trash2 size={13} />
-                        </button>
-                      </div>
-                    );
-                  })}
-                </div>
-
-                {/* Info maks buku */}
-                <p className="text-xs text-gray-400 text-center">
-                  {cart.length}/3 buku · {3 - cart.length > 0 ? `Bisa tambah ${3 - cart.length} lagi` : 'Sudah maksimal'}
-                </p>
-
-                {/* Form */}
-                <div className="bg-blue-50 border border-blue-100 rounded-xl p-3 space-y-3">
-                  <p className="text-xs font-semibold text-blue-700 uppercase tracking-wide">Detail Peminjaman</p>
-
-                  <div>
-                    <label className="block text-xs font-semibold text-gray-600 mb-1">
-                      Tanggal Pengembalian <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="date"
-                      min={todayStr}
-                      value={tglDeadline}
-                      onChange={(e) => setTglDeadline(e.target.value)}
-                      className="input input-bordered input-sm w-full bg-white text-sm"
-                    />
-                    <p className="text-xs text-gray-400 mt-1">Berlaku untuk semua buku dalam pengajuan ini.</p>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-semibold text-gray-600 mb-1">
-                      Kepentingan <span className="text-gray-400 font-normal">(opsional)</span>
-                    </label>
-                    <textarea
-                      rows={2}
-                      placeholder="Contoh: Untuk tugas penelitian..."
-                      value={kepentingan}
-                      onChange={(e) => setKepentingan(e.target.value)}
-                      className="textarea textarea-bordered textarea-sm w-full bg-white text-sm resize-none"
-                    />
-                  </div>
-                </div>
-              </>
-            )}
-          </div>
-
-          {/* Footer */}
-          {cart.length > 0 && (
-            <div className="border-t border-gray-100 px-4 py-4 space-y-3 bg-white flex-shrink-0">
-              {hasPinjamanAktif && (
-                <div className="flex items-start gap-2 py-2.5 px-3 bg-blue-50 border border-blue-200 rounded-lg">
-                  <Info size={13} className="text-blue-500 flex-shrink-0 mt-0.5" />
-                  <p className="text-xs text-blue-700">
-                    {pinjamanMenunggu.length > 0 && pinjamanDipinjam.length === 0
-                      ? 'Masih ada pengajuan yang menunggu verifikasi. Tunggu sampai diproses operator.'
-                      : 'Kembalikan semua buku yang sedang dipinjam terlebih dahulu.'}
-                  </p>
-                </div>
-              )}
-
-              {/* Warning denda */}
-              {isBlocked && !hasPinjamanAktif && (
-                <div className="flex items-center gap-2 py-2 px-3 bg-amber-50 border border-amber-100 rounded-lg">
-                  <AlertTriangle size={13} className="text-amber-500 flex-shrink-0" />
-                  <p className="text-xs text-amber-700">
-                    {isBukuTelat
-                      ? 'Kembalikan buku yang telat dulu untuk bisa mengajukan.'
-                      : <>Ada denda <span className="font-semibold">{formatRupiah(dendaInfo?.denda?.nominal)}</span> yang belum lunas.</>
-                    }
-                  </p>
-                </div>
-              )}
-
-              <div className="flex justify-between items-center text-sm">
-                <span className="text-gray-500">Total buku</span>
-                <span className="font-bold text-gray-900">{cart.length} buku</span>
-              </div>
-              <div className="flex justify-between items-center text-sm">
-                <span className="text-gray-500">Tanggal kembali</span>
-                <span className={`font-bold ${tglDeadline ? 'text-emerald-600' : 'text-amber-500'}`}>
-                  {tglDeadline
-                    ? new Date(tglDeadline).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })
-                    : 'Belum diisi'}
-                </span>
-              </div>
-
-              <button
-                onClick={handleSubmitKeranjang}
-                disabled={submitLoading || cannotBorrow || !readyToSubmit}
-                className={`w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition-all duration-200
-                  ${submitLoading || cannotBorrow || !readyToSubmit
-                    ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                    : 'bg-blue-600 text-white hover:bg-blue-700 active:scale-[0.98]'
-                  }`}
-              >
-                {submitLoading ? (
-                  <><span className="loading loading-spinner loading-xs" /> Mengajukan...</>
-                ) : hasPinjamanAktif ? (
-                  <>Ada Peminjaman Aktif</>
-                ) : (
-                  <>Ajukan {cart.length} Peminjaman <ChevronRight size={16} /></>
-                )}
-              </button>
-
-              {!tglDeadline && !cannotBorrow && (
-                <p className="text-xs text-center text-amber-500">
-                  Isi tanggal pengembalian terlebih dahulu
-                </p>
-              )}
-            </div>
-          )}
-        </div>
-      </>
-    );
-  };
 
   return (
     <AppLayout>
@@ -685,8 +506,21 @@ const KatalogBuku = () => {
             )}
           </button>
         </div>
-        <PinjamanAktifBanner />
-        <DendaBanner />
+
+        <PinjamanAktifBanner
+          hasPinjamanAktif={hasPinjamanAktif}
+          isBlocked={isBlocked}
+          pinjamanMenunggu={pinjamanMenunggu}
+          pinjamanDipinjam={pinjamanDipinjam}
+        />
+        <DendaBanner
+          dendaLoading={dendaLoading}
+          isBlocked={isBlocked}
+          isBukuTelat={isBukuTelat}
+          dendaInfo={dendaInfo}
+          allTransaksi={allTransaksi}
+          formatRupiah={formatRupiah}
+        />
 
         {/* Filters */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-3 sm:p-4 mb-4 sm:mb-6">
@@ -733,9 +567,7 @@ const KatalogBuku = () => {
             <button className="btn btn-ghost border border-gray-300 hover:bg-gray-50 btn-sm" onClick={resetFilters}>
               Reset
             </button>
-            {hasActiveFilter && (
-              <span className="text-xs text-gray-400">Filter aktif</span>
-            )}
+            {hasActiveFilter && <span className="text-xs text-gray-400">Filter aktif</span>}
           </div>
         </div>
 
@@ -771,7 +603,19 @@ const KatalogBuku = () => {
               <>
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4 p-4">
                   {paginatedBooks.map((book) => (
-                    <BookCard key={book.id} book={book} />
+                    <BookCard
+                      key={book.id}
+                      book={book}
+                      cart={cart}
+                      cannotBorrow={cannotBorrow}
+                      hasPinjamanAktif={hasPinjamanAktif}
+                      isBlocked={isBlocked}
+                      isBukuTelat={isBukuTelat}
+                      transaksiAktif={transaksiAktif}
+                      addToCart={addToCart}
+                      openDetailModal={openDetailModal}
+                      getCoverUrl={getCoverUrl}
+                    />
                   ))}
                 </div>
                 {Pagination({
@@ -850,7 +694,6 @@ const KatalogBuku = () => {
                       <StockStatus stok={selectedBook.stok_tersedia} />
                     </div>
 
-                    {/* Info pinjaman aktif di modal detail */}
                     {hasPinjamanAktif && (
                       <div className="flex items-start gap-2 py-2 px-3 bg-blue-50 border border-blue-200 rounded-lg">
                         <Info size={12} className="text-blue-500 flex-shrink-0 mt-0.5" />
@@ -861,36 +704,31 @@ const KatalogBuku = () => {
                         </p>
                       </div>
                     )}
-
                     {isSedangMenunggu(selectedBook.id) && (
                       <div className="flex items-center gap-2 py-2 px-3 bg-yellow-50 border border-yellow-200 rounded-lg">
                         <div className="w-1.5 h-1.5 rounded-full bg-yellow-400 flex-shrink-0" />
                         <p className="text-xs text-yellow-700">Peminjaman kamu sedang menunggu persetujuan operator.</p>
                       </div>
                     )}
-
                     {isSedangDipinjam(selectedBook.id) && (
                       <div className="flex items-center gap-2 py-2 px-3 bg-gray-50 border border-gray-200 rounded-lg">
                         <div className="w-1.5 h-1.5 rounded-full bg-amber-400 flex-shrink-0" />
                         <p className="text-xs text-gray-500">Kamu masih meminjam buku ini.</p>
                       </div>
                     )}
-
                     {!isSedangDipinjam(selectedBook.id) && !isSedangMenunggu(selectedBook.id) && cart.length >= 3 && !isInCart(selectedBook.id) && (
                       <div className="flex items-center gap-2 py-2 px-3 bg-gray-50 border border-gray-200 rounded-lg">
                         <AlertTriangle size={12} className="text-gray-400 flex-shrink-0" />
                         <p className="text-xs text-gray-500">Keranjang sudah penuh (maks. 3 buku per pengajuan).</p>
                       </div>
                     )}
-
                     {isBlocked && (
                       <div className="flex items-center gap-2 py-2 px-3 bg-amber-50 border border-amber-100 rounded-lg">
                         <AlertTriangle size={12} className="text-amber-500 flex-shrink-0" />
                         <p className="text-xs text-amber-700">
                           {isBukuTelat
                             ? 'Kembalikan buku yang telat dulu sebelum meminjam.'
-                            : <>Ada denda <span className="font-semibold">{formatRupiah(dendaInfo?.denda?.nominal)}</span> yang belum lunas.</>
-                          }
+                            : <>Ada denda <span className="font-semibold">{formatRupiah(dendaInfo?.denda?.nominal)}</span> yang belum lunas.</>}
                         </p>
                       </div>
                     )}
@@ -902,7 +740,11 @@ const KatalogBuku = () => {
                   </button>
                   <button
                     className={`btn flex-1 ${
-                      selectedBook.stok_tersedia > 0 && !cannotBorrow && !isSedangDipinjam(selectedBook.id) && !isSedangMenunggu(selectedBook.id) && (cart.length < 3 || isInCart(selectedBook.id))
+                      selectedBook.stok_tersedia > 0 &&
+                      !cannotBorrow &&
+                      !isSedangDipinjam(selectedBook.id) &&
+                      !isSedangMenunggu(selectedBook.id) &&
+                      (cart.length < 3 || isInCart(selectedBook.id))
                         ? isInCart(selectedBook.id)
                           ? 'bg-emerald-600 hover:bg-emerald-700 text-white border-none'
                           : 'bg-blue-600 hover:bg-blue-700 text-white border-none'
@@ -915,23 +757,20 @@ const KatalogBuku = () => {
                       isSedangMenunggu(selectedBook.id) ||
                       (cart.length >= 3 && !isInCart(selectedBook.id))
                     }
-                    onClick={() => { addToCart(selectedBook); closeDetailModal(); }}
+                    onClick={() => {
+                      addToCart(selectedBook);
+                      closeDetailModal();
+                    }}
                   >
-                    {selectedBook.stok_tersedia === 0
-                      ? 'Stok Habis'
-                      : isSedangMenunggu(selectedBook.id)
-                        ? 'Menunggu Persetujuan'
-                        : isSedangDipinjam(selectedBook.id)
-                          ? 'Sedang Dipinjam'
-                          : hasPinjamanAktif
-                            ? 'Ada Pinjaman Aktif'
-                            : isBlocked
-                              ? isBukuTelat ? 'Ada Buku Telat' : 'Ada Denda Belum Lunas'
-                              : cart.length >= 3 && !isInCart(selectedBook.id)
-                                ? 'Keranjang Penuh'
-                                : isInCart(selectedBook.id)
-                                  ? '✓ Sudah di Keranjang'
-                                  : 'Tambah ke Keranjang'}
+                    {selectedBook.stok_tersedia === 0          ? 'Stok Habis'
+                     : isSedangMenunggu(selectedBook.id)       ? 'Menunggu Persetujuan'
+                     : isSedangDipinjam(selectedBook.id)       ? 'Sedang Dipinjam'
+                     : hasPinjamanAktif                        ? 'Ada Pinjaman Aktif'
+                     : isBlocked
+                       ? isBukuTelat ? 'Ada Buku Telat' : 'Ada Denda Belum Lunas'
+                     : cart.length >= 3 && !isInCart(selectedBook.id) ? 'Keranjang Penuh'
+                     : isInCart(selectedBook.id)               ? '✓ Sudah di Keranjang'
+                     :                                           'Tambah ke Keranjang'}
                   </button>
                 </div>
               </div>
@@ -939,7 +778,29 @@ const KatalogBuku = () => {
           </div>
         )}
 
-        <KeranjangDrawer />
+        {/* Keranjang Drawer */}
+        <KeranjangDrawer
+          showDrawer={showDrawer}
+          setShowDrawer={setShowDrawer}
+          cart={cart}
+          removeFromCart={removeFromCart}
+          tglDeadline={tglDeadline}
+          setTglDeadline={setTglDeadline}
+          kepentingan={kepentingan}
+          setKepentingan={setKepentingan}
+          submitLoading={submitLoading}
+          handleSubmitKeranjang={handleSubmitKeranjang}
+          cannotBorrow={cannotBorrow}
+          hasPinjamanAktif={hasPinjamanAktif}
+          isBlocked={isBlocked}
+          isBukuTelat={isBukuTelat}
+          dendaInfo={dendaInfo}
+          pinjamanMenunggu={pinjamanMenunggu}
+          pinjamanDipinjam={pinjamanDipinjam}
+          formatRupiah={formatRupiah}
+          getCoverUrl={getCoverUrl}
+          todayStr={todayStr}
+        />
       </div>
     </AppLayout>
   );

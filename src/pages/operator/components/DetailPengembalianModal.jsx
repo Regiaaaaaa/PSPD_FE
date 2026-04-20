@@ -1,11 +1,13 @@
-import { CheckCircle, X, AlertTriangle, Clock } from 'lucide-react';
+import { CheckCircle, X, AlertTriangle, Clock, CheckCheck } from 'lucide-react';
 
 const DetailPengembalianModal = ({
   isOpen,
   onClose,
   transaksi: t,
   onTerima,
+  onTerimaAll,       
   loadingTerima,
+  loadingTerimaAll, 
   isLate,
   hitungSelisihHari,
   getNamaPeminjam,
@@ -13,11 +15,14 @@ const DetailPengembalianModal = ({
   activeTab,
 }) => {
   if (!isOpen || !t) return null;
+
   const terlambat = isLate(t.tgl_deadline);
   const selisihHari = terlambat ? hitungSelisihHari(t.tgl_deadline) : 0;
-  const estimasiDenda = selisihHari * 1000;
   const activeDetails = (t.details || []).filter(d => d.status === 'dipinjam');
   const returnedDetails = (t.details || []).filter(d => d.status === 'kembali');
+
+  const dendaPerBuku = selisihHari * 1000;
+  const estimasiDendaTotal = dendaPerBuku * activeDetails.length;
 
   const Row = ({ label, value, valueClass = '' }) => (
     <div className="flex justify-between items-start gap-4 py-2 border-b border-gray-100 last:border-0">
@@ -44,10 +49,15 @@ const DetailPengembalianModal = ({
           {terlambat ? (
             <div className="flex items-start gap-2 bg-red-50 border border-red-200 rounded-lg p-3">
               <AlertTriangle size={15} className="text-red-500 mt-0.5 flex-shrink-0" />
-              <div>
+              <div className="w-full">
                 <p className="text-xs font-semibold text-red-700">Terlambat {selisihHari} hari</p>
-                <p className="text-xs text-red-500">
-                  Estimasi denda: <span className="font-bold">Rp {estimasiDenda.toLocaleString('id-ID')}</span>
+                {activeDetails.length > 0 && (
+                  <p className="text-xs text-red-500 mt-0.5">
+                    {activeDetails.length} buku × Rp {dendaPerBuku.toLocaleString('id-ID')}
+                  </p>
+                )}
+                <p className="text-xs font-bold text-red-700 mt-1 pt-1 border-t border-red-200">
+                  Total estimasi denda: Rp {estimasiDendaTotal.toLocaleString('id-ID')}
                 </p>
               </div>
             </div>
@@ -88,24 +98,44 @@ const DetailPengembalianModal = ({
               />
             </div>
           </div>
-
-          {/* Buku yang Belum Dikembalikan */}
           {activeDetails.length > 0 && (
             <div>
-              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
-                Belum Dikembalikan ({activeDetails.length})
-              </p>
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                  Belum Dikembalikan ({activeDetails.length})
+                </p>
+                {activeDetails.length > 1 && (
+                  <button
+                    className="btn btn-xs bg-green-600 hover:bg-green-700 text-white border-none gap-1"
+                    onClick={() => onTerimaAll(t, activeDetails)}
+                    disabled={loadingTerimaAll || loadingTerima !== null}
+                  >
+                    {loadingTerimaAll ? (
+                      <span className="loading loading-spinner loading-xs"></span>
+                    ) : (
+                      <CheckCheck size={12} />
+                    )}
+                    Terima Semua
+                  </button>
+                )}
+              </div>
+
               <div className="space-y-2">
                 {activeDetails.map((d) => (
                   <div key={d.id} className="bg-gray-50 rounded-lg px-3 py-2 flex items-center justify-between gap-2">
                     <div className="flex-1 min-w-0">
                       <p className="text-xs font-medium text-gray-800 line-clamp-1">{d.buku?.judul || '-'}</p>
                       {d.buku?.isbn && <p className="text-xs text-gray-400">{d.buku.isbn}</p>}
+                      {terlambat && (
+                        <p className="text-xs text-red-500 font-medium mt-0.5">
+                          Denda: Rp {dendaPerBuku.toLocaleString('id-ID')}
+                        </p>
+                      )}
                     </div>
                     <button
                       className="btn btn-xs bg-green-600 hover:bg-green-700 text-white border-none gap-1 flex-shrink-0"
                       onClick={() => onTerima(t, d)}
-                      disabled={loadingTerima === d.id}
+                      disabled={loadingTerima === d.id || loadingTerimaAll}
                     >
                       {loadingTerima === d.id ? (
                         <span className="loading loading-spinner loading-xs"></span>
