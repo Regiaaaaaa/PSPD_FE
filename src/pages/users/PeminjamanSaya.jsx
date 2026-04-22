@@ -134,7 +134,6 @@ const PeminjamanSaya = () => {
   };
   const closePesanDiterimaModal = () => { setShowPesanDiterimaModal(false); setSelectedPesanDiterima(null); };
 
-  // Badge total denda di kolom
   const DendaBadge = ({ nominal }) => {
     const formatted = formatRupiah(nominal);
     if (!formatted) return <span className="text-xs text-gray-400">—</span>;
@@ -161,9 +160,6 @@ const PeminjamanSaya = () => {
         {details.map((d) => {
           const coverUrl = getCoverUrl(d.buku?.cover);
           const detailStatus = getDetailStatusInfo(d.status);
-          const denda = d.denda;
-          const isDendaBelumLunas = denda?.status_pembayaran === 'belum_lunas';
-          const isDendaLunas = denda?.status_pembayaran === 'lunas';
           const showDendaBerjalan = isOverdue && d.status === 'dipinjam' && dendaPerBuku > 0;
 
           return (
@@ -186,25 +182,9 @@ const PeminjamanSaya = () => {
                 <p className="text-sm font-medium text-gray-800 truncate">{d.buku?.judul || '-'}</p>
                 <p className="text-xs text-gray-500 truncate mb-1">{d.buku?.penulis || '-'}</p>
                 <span className={`badge ${detailStatus.badge} badge-xs`}>{detailStatus.label}</span>
-
-                {/* Badge denda berjalan per buku */}
                 {showDendaBerjalan && (
                   <div className="mt-1.5 inline-flex items-center gap-1 bg-red-50 border border-red-200 text-red-600 text-xs font-semibold px-2 py-0.5 rounded-full ml-1">
                     ⚠️ {formatRupiah(dendaPerBuku)}
-                  </div>
-                )}
-
-                {/* Badge denda tercatat belum lunas */}
-                {isDendaBelumLunas && (
-                  <div className="mt-1.5 inline-flex items-center gap-1 bg-red-50 border border-red-200 text-red-600 text-xs font-semibold px-2 py-0.5 rounded-full ml-1">
-                    ⚠️ {formatRupiah(denda.nominal)} · Belum Lunas
-                  </div>
-                )}
-
-                {/* Badge denda lunas */}
-                {isDendaLunas && (
-                  <div className="mt-1.5 inline-flex items-center gap-1 bg-green-50 border border-green-200 text-green-600 text-xs font-semibold px-2 py-0.5 rounded-full ml-1">
-                    <CheckCircle size={10} /> {formatRupiah(denda.nominal)} · Lunas
                   </div>
                 )}
               </div>
@@ -376,8 +356,6 @@ const PeminjamanSaya = () => {
                               {status.icon} {status.label}
                             </span>
                           </td>
-
-                          {/* Kolom total denda berjalan */}
                           <td className="text-center align-top pt-4">
                             <DendaBadge nominal={t.denda_berjalan} />
                           </td>
@@ -439,8 +417,6 @@ const PeminjamanSaya = () => {
             </>
           )}
         </div>
-
-        {/* Modal Konfirmasi Cancel */}
         {showCancelModal && selectedTransaksi && (
           <div className="modal modal-open">
             <div className="modal-box w-11/12 max-w-sm p-4 sm:p-6">
@@ -482,8 +458,6 @@ const PeminjamanSaya = () => {
             <div className="modal-backdrop" onClick={closeCancelModal}></div>
           </div>
         )}
-
-        {/* Modal Pesan Ditolak */}
         {showPesanModal && selectedPesan && (
           <div className="modal modal-open">
             <div className="modal-box w-11/12 max-w-md p-4 sm:p-6">

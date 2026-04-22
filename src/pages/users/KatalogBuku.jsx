@@ -45,51 +45,19 @@ const StockStatus = ({ stok }) => {
   );
 };
 
-const DendaBanner = ({ dendaLoading, isBlocked, isBukuTelat, dendaInfo, allTransaksi, formatRupiah }) => {
+const DendaBanner = ({ dendaLoading, isBlocked, dendaInfo, formatRupiah }) => {
   if (dendaLoading || !isBlocked) return null;
-  const semuaDendaBelumLunas = [];
-  (allTransaksi || []).forEach((t) => {
-    (t.details || []).forEach((d) => {
-      if (d.denda && d.denda.status_pembayaran === 'belum_lunas') {
-        semuaDendaBelumLunas.push({
-          nominal: d.denda.nominal || 0,
-          judul: d.buku?.judul || null,
-        });
-      }
-    });
-  });
 
-  const totalDenda      = semuaDendaBelumLunas.reduce((sum, d) => sum + d.nominal, 0);
-  const totalBuku       = semuaDendaBelumLunas.length;
-  const nominalFallback = dendaInfo?.denda?.nominal || 0;
-
-  if (isBukuTelat) {
-    const judulBuku = dendaInfo?.denda?.judul_buku;
-    const nominal   = dendaInfo?.denda?.nominal;
-    return (
-      <div className="mb-3 flex items-start gap-2 px-3 py-2 bg-amber-50 border border-amber-200 rounded-lg">
-        <AlertTriangle size={13} className="text-amber-500 flex-shrink-0 mt-0.5" />
-        <p className="text-xs text-amber-700 leading-relaxed">
-          <span className="font-semibold">Tidak bisa meminjam</span>
-          {' '}· buku telat dikembalikan
-          {judulBuku && <> · <span className="font-medium">"{judulBuku}"</span></>}
-          {nominal > 0 && <> · denda berjalan <span className="font-semibold">{formatRupiah(nominal)}</span></>}
-          {' '}· Kembalikan dulu untuk bisa meminjam lagi.
-        </p>
-      </div>
-    );
-  }
+  const nominal = dendaInfo?.nominal || 0;
 
   return (
     <div className="mb-3 flex items-start gap-2 px-3 py-2 bg-amber-50 border border-amber-200 rounded-lg">
       <AlertTriangle size={13} className="text-amber-500 flex-shrink-0 mt-0.5" />
       <p className="text-xs text-amber-700 leading-relaxed">
         <span className="font-semibold">Tidak bisa meminjam</span>
-        {' '}· anda masih mempunyai denda{' '}
-        <span className="font-semibold">{totalBuku > 0 ? totalBuku : 1} buku</span>
-        {' '}dengan total{' '}
-        <span className="font-semibold">{formatRupiah(totalBuku > 0 ? totalDenda : nominalFallback)}</span>
-        {' '}yang belum dibayarkan · Selesaikan pembayaran untuk meminjam lagi.
+        {' '}· anda memiliki denda{' '}
+        <span className="font-semibold">{formatRupiah(nominal)}</span>
+        {' '}yang harus diselesaikan · Selesaikan pembayaran untuk meminjam lagi.
       </p>
     </div>
   );
@@ -700,8 +668,6 @@ const KatalogBuku = () => {
             )}
           </div>
         )}
-
-        {/* ── Modal Detail Buku ── */}
         {showDetailModal && selectedBook && (
           <div className="fixed inset-0 z-[1000] overflow-y-auto" onClick={closeDetailModal}>
             <div className="flex min-h-screen items-center justify-center p-4">
@@ -814,11 +780,7 @@ const KatalogBuku = () => {
                     )}
                   </div>
                 </div>
-
-                {/* Footer Modal */}
                 <div className="mt-5 sm:mt-6 space-y-2.5">
-
-                  {/* Quick Borrow Form (compact) */}
                   {showQuickBorrow && (
                     <div className="rounded-xl border border-emerald-200 bg-emerald-50 overflow-hidden">
                       {/* header strip */}
@@ -833,7 +795,6 @@ const KatalogBuku = () => {
                       </div>
 
                       <div className="p-3 space-y-2.5">
-                        {/* row: tanggal + kepentingan */}
                         <div className="grid grid-cols-2 gap-2">
                           <div>
                             <label className="block text-[11px] font-medium text-gray-500 mb-1">
@@ -861,8 +822,6 @@ const KatalogBuku = () => {
                             />
                           </div>
                         </div>
-
-                        {/* deadline preview pill */}
                         {quickDeadline && (() => {
                           const preview = formatDeadlinePreview(quickDeadline);
                           return preview ? (

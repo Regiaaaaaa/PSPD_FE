@@ -18,6 +18,8 @@ const DetailVerifikasiModal = ({
   setPesanDiterima,
 }) => {
   if (!isOpen || !t) return null;
+  const today = new Date();
+  const minDeadlineDate = today.toISOString().split('T')[0];
 
   const Row = ({ label, value, valueClass = '' }) => (
     <div className="flex justify-between items-start gap-4 py-2 border-b border-gray-100 last:border-0">
@@ -32,8 +34,6 @@ const DetailVerifikasiModal = ({
   return (
     <div className="modal modal-open">
       <div className="modal-box w-11/12 max-w-sm p-0 overflow-hidden">
-
-        {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200">
           <h3 className="font-bold text-sm text-gray-800">Detail Verifikasi</h3>
           <button className="btn btn-ghost btn-xs btn-circle" onClick={onClose}>
@@ -42,8 +42,6 @@ const DetailVerifikasiModal = ({
         </div>
 
         <div className="px-4 py-4 space-y-4 max-h-[70vh] overflow-y-auto">
-
-          {/* Status Banner */}
           <div className={`flex items-center gap-2 rounded-lg p-3 border ${
             allStokOk
               ? 'bg-green-50 border-green-200'
@@ -57,8 +55,6 @@ const DetailVerifikasiModal = ({
               {allStokOk ? 'Semua Stok Tersedia' : 'Ada Buku dengan Stok Tidak Mencukupi'}
             </p>
           </div>
-
-          {/* Info Peminjam */}
           <div>
             <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Peminjam</p>
             <div className="bg-gray-50 rounded-lg px-3 py-1">
@@ -86,8 +82,6 @@ const DetailVerifikasiModal = ({
               )}
             </div>
           </div>
-
-          {/* Info Buku */}
           <div>
             <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
               Buku ({details.length})
@@ -135,7 +129,7 @@ const DetailVerifikasiModal = ({
                       type="date"
                       value={newDeadline}
                       onChange={(e) => setNewDeadline(e.target.value)}
-                      min={new Date().toISOString().split('T')[0]}
+                      min={minDeadlineDate}
                       className="input input-bordered input-sm w-full bg-white text-xs focus:border-blue-400 focus:outline-none"
                       style={{ borderRadius: '8px' }}
                     />
@@ -145,8 +139,6 @@ const DetailVerifikasiModal = ({
               </div>
             </div>
           )}
-
-          {/* Kepentingan */}
           <div>
             <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Kepentingan</p>
             <div className="bg-gray-50 rounded-lg px-3 py-2">
@@ -157,8 +149,6 @@ const DetailVerifikasiModal = ({
               )}
             </div>
           </div>
-
-          {/* Pesan Diterima (hanya saat approve) */}
           {setPesanDiterima && (
             <div>
               <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Pesan Diterima (Opsional)</p>
@@ -177,8 +167,6 @@ const DetailVerifikasiModal = ({
           )}
 
         </div>
-
-        {/* Footer */}
         <div className="flex justify-end gap-2 px-4 py-3 border-t border-gray-200 bg-gray-50">
           <button className="btn btn-ghost btn-sm" onClick={onClose}>Tutup</button>
           <button

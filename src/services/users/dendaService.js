@@ -2,27 +2,20 @@ import { getToken } from "../../utils/auth";
 
 const API_URL = "/api/user/transaksi";
 
-// Get denda 
 export const getMyDenda = async () => {
-  const token = getToken();
-
   const res = await fetch(API_URL, {
     method: "GET",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
+      Authorization: `Bearer ${getToken()}`,
     },
   });
 
   const data = await res.json();
   if (!res.ok) throw new Error(data.message || "Gagal memuat denda");
-
-
-  const transaksiWithDenda = (data.data || []).filter((t) =>
-    t.details?.some((d) => d.denda)
+  const transaksiWithDenda = (data.data || []).filter(
+    (t) => parseFloat(t.total_denda) > 0
   );
 
   return { success: true, data: transaksiWithDenda };
 };
-
-

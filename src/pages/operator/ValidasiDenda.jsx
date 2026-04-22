@@ -39,6 +39,7 @@ const ValidasiDenda = () => {
     setLoading(true);
     try {
       const data = await getDenda();
+      // Handle paginate Laravel: data.data.data atau data.data
       setDendaList(data.data?.data || data.data || []);
     } catch (error) {
       toast.error(error?.message || 'Gagal memuat data denda');
@@ -80,30 +81,36 @@ const ValidasiDenda = () => {
   };
 
   const hasActiveFilter = searchTerm || filterTingkat !== 'all' || filterJurusan !== 'all' || filterKelas !== 'all';
+const getUser = (item) => item?.user;
+const getSiswa = (item) => getUser(item)?.siswa;
+const getStaff = (item) => getUser(item)?.staff;
+const getNama = (item) => getUser(item)?.name || '-';
+const getNisn = (item) => getSiswa(item)?.nomor_induk_siswa || '-';
+const getNip = (item) => getStaff(item)?.nomor_induk_pegawai || '-';
+const getSubInfo = (item) => {
+  const siswa = getSiswa(item);
+  const staff = getStaff(item);
+  if (siswa) return `${siswa.tingkat || ''} ${siswa.jurusan || ''} ${siswa.kelas || ''}`.trim() || '-';
+  if (staff) return staff.jabatan || '-';
+  return '-';
+};
+  const getDetailsDenda = (item) =>
+    (item?.details || []).filter(d => parseFloat(d.total_denda_item) > 0);
 
-
-  const getUser = (item) => item.transaksi_detail?.transaksi?.user;
-  const getSiswa = (item) => getUser(item)?.siswa;
-  const getStaff = (item) => getUser(item)?.staff;
-
-  const getNama = (item) =>
-    getSiswa(item)?.nama_lengkap ||
-    getStaff(item)?.nama_lengkap ||
-    getUser(item)?.name ||
-    '-';
-
-  const getSubInfo = (item) => {
-    const siswa = getSiswa(item);
-    const staff = getStaff(item);
-    if (siswa) {
-      if (siswa.tingkat && siswa.jurusan) return `${siswa.tingkat} ${siswa.jurusan} ${siswa.kelas || ''}`.trim();
-      return siswa.kelas || '-';
-    }
-    if (staff) return staff.jabatan || '-';
-    return '-';
+  const getBukuDisplay = (item) => {
+    const details = getDetailsDenda(item);
+    if (details.length === 0) return { judul: '-', isbn: '', extra: null };
+    if (details.length === 1) return {
+      judul: details[0].buku?.judul || '-',
+      isbn: details[0].buku?.isbn || '',
+      extra: null,
+    };
+    return {
+      judul: details[0].buku?.judul || '-',
+      isbn: '',
+      extra: `+${details.length - 1} buku lainnya`,
+    };
   };
-
-  const getBuku = (item) => item.transaksi_detail?.buku;
 
   const formatDate = (dateStr) => {
     if (!dateStr) return '-';
@@ -118,18 +125,17 @@ const ValidasiDenda = () => {
       style: 'currency', currency: 'IDR', minimumFractionDigits: 0,
     }).format(amount);
   };
-
   const filteredDenda = dendaList
-    .filter((item) => item.status_pembayaran !== 'lunas')
     .filter((item) => {
-      if (activeTab === 'siswa') return !!getSiswa(item);
-      if (activeTab === 'staff') return !!getStaff(item);
+      if (activeTab === 'siswa') return getUser(item)?.role === 'siswa' || !!getSiswa(item);
+      if (activeTab === 'staff') return getUser(item)?.role === 'staff' || !!getStaff(item);
       return true;
     })
     .filter((item) => {
       const nama = getNama(item).toLowerCase();
-      const judul = getBuku(item)?.judul?.toLowerCase() || '';
-      const matchSearch = nama.includes(searchTerm.toLowerCase()) || judul.includes(searchTerm.toLowerCase());
+      const buku = getBukuDisplay(item);
+      const judulMatch = buku.judul.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchSearch = nama.includes(searchTerm.toLowerCase()) || judulMatch;
 
       if (activeTab !== 'siswa') return matchSearch;
 
@@ -141,8 +147,6 @@ const ValidasiDenda = () => {
       return matchSearch && matchTingkat && matchJurusan && matchKelas;
     });
 
-  const totalBelumLunas = dendaList.filter((d) => d.status_pembayaran !== 'lunas').length;
-
   const totalPages = Math.ceil(filteredDenda.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const paginatedData = filteredDenda.slice(startIndex, startIndex + itemsPerPage);
@@ -151,8 +155,6 @@ const ValidasiDenda = () => {
   return (
     <AppLayout>
       <div className="p-4 sm:p-6 max-w-7xl mx-auto">
-
-        {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
           <div>
             <h1 className="text-2xl font-bold text-gray-800">Validasi Denda</h1>
@@ -160,30 +162,25 @@ const ValidasiDenda = () => {
           </div>
           <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-2 rounded-lg">
             <Clock size={16} />
-            <span>{totalBelumLunas} denda belum lunas</span>
+            <span>{dendaList.length} denda belum lunas</span>
           </div>
         </div>
-
-{/* Tabs */}
-<div role="tablist" className="tabs tabs-lift tabs-sm mb-6">
-  <button
-    role="tab"
-    className={`tab ${activeTab === 'siswa' ? 'tab-active [--tab-bg:#dbeafe] [--tab-color:#1e40af]' : ''}`}
-    onClick={() => setActiveTab('siswa')}
-  >
-    Siswa
-  </button>
-
-  <button
-    role="tab"
-    className={`tab ${activeTab === 'staff' ? 'tab-active [--tab-bg:#dbeafe] [--tab-color:#1e40af]' : ''}`}
-    onClick={() => setActiveTab('staff')}
-  >
-    Staff
-  </button>
-</div>
-
-        {/* Filter */}
+        <div role="tablist" className="tabs tabs-lift tabs-sm mb-6">
+          <button
+            role="tab"
+            className={`tab ${activeTab === 'siswa' ? 'tab-active [--tab-bg:#dbeafe] [--tab-color:#1e40af]' : ''}`}
+            onClick={() => setActiveTab('siswa')}
+          >
+            Siswa
+          </button>
+          <button
+            role="tab"
+            className={`tab ${activeTab === 'staff' ? 'tab-active [--tab-bg:#dbeafe] [--tab-color:#1e40af]' : ''}`}
+            onClick={() => setActiveTab('staff')}
+          >
+            Staff
+          </button>
+        </div>
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-4">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
             <div>
@@ -223,7 +220,11 @@ const ValidasiDenda = () => {
               </select>
             </div>
           </div>
-          <button className="btn btn-ghost border border-gray-300 hover:bg-gray-50" onClick={handleResetFilter}>
+          <button
+            className="btn btn-ghost border border-gray-300 hover:bg-gray-50"
+            onClick={handleResetFilter}
+            disabled={activeTab !== 'siswa'}
+          >
             Reset
           </button>
         </div>
@@ -265,64 +266,65 @@ const ValidasiDenda = () => {
                       <th className="font-semibold text-gray-700">{activeTab === 'siswa' ? 'Kelas' : 'Jabatan'}</th>
                       <th className="font-semibold text-gray-700">Buku</th>
                       <th className="w-32 text-right font-semibold text-gray-700">Total Denda</th>
-                      <th className="w-32 text-center font-semibold text-gray-700">Tgl Denda</th>
+                      <th className="w-32 text-center font-semibold text-gray-700">Tgl Kembali</th>
                       <th className="w-28 text-center font-semibold text-gray-700">Aksi</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {paginatedData.map((item, index) => (
-                      <tr key={item.id} className="border-b border-gray-100 hover:bg-gray-50/50 transition-colors">
-                        <td className="text-gray-500">{startIndex + index + 1}</td>
+                    {paginatedData.map((item, index) => {
+                      const buku = getBukuDisplay(item);
+                      return (
+                        <tr key={item.id} className="border-b border-gray-100 hover:bg-gray-50/50 transition-colors">
+                          <td className="text-gray-500">{startIndex + index + 1}</td>
 
-                        {/* Peminjam */}
-                        <td>
-                          <p className="font-medium text-gray-800 text-sm">{getNama(item)}</p>
-                          <p className="text-xs text-gray-400">
-                            {activeTab === 'siswa'
-                              ? getSiswa(item)?.nomor_induk_siswa || '-'
-                              : getStaff(item)?.nomor_induk_pegawai || '-'}
-                          </p>
-                        </td>
+                          {/* Peminjam */}
+                          <td>
+                            <p className="font-medium text-gray-800 text-sm">{getNama(item)}</p>
+                            <p className="text-xs text-gray-400">
+                              {activeTab === 'siswa' ? getNisn(item) : getNip(item)}
+                            </p>
+                          </td>
 
-                        {/* Kelas - Jabatan */}
-                        <td className="text-sm text-gray-600">{getSubInfo(item)}</td>
+                          {/* Kelas / Jabatan */}
+                          <td className="text-sm text-gray-600">{getSubInfo(item)}</td>
 
-                        {/* Buku — sekarang dari detail.buku */}
-                        <td>
-                          <p className="font-medium text-gray-800 text-sm line-clamp-1">
-                            {getBuku(item)?.judul || '-'}
-                          </p>
-                          <p className="text-xs text-gray-400">{getBuku(item)?.isbn || ''}</p>
-                        </td>
+                          {/* Buku */}
+                          <td>
+                            <p className="font-medium text-gray-800 text-sm line-clamp-1">{buku.judul}</p>
+                            {buku.isbn && <p className="text-xs text-gray-400">{buku.isbn}</p>}
+                            {buku.extra && <p className="text-xs text-blue-500">{buku.extra}</p>}
+                          </td>
 
-                        <td className="text-right text-sm font-semibold text-red-600">
-                          {formatRupiah(item.nominal)}
-                        </td>
+                          {/* Total Denda */}
+                          <td className="text-right text-sm font-semibold text-red-600">
+                            {formatRupiah(item.total_denda)}
+                          </td>
+                          <td className="text-center text-sm text-gray-600">
+                            {formatDate(item.updated_at)}
+                          </td>
 
-                        <td className="text-center text-sm text-gray-600">
-                          {formatDate(item.created_at)}
-                        </td>
-
-                        <td>
-                          <div className="flex gap-1.5 justify-center">
-                            <button
-                              className="btn btn-ghost btn-xs text-blue-600 hover:bg-blue-50"
-                              onClick={() => handleDetailClick(item)}
-                              title="Detail"
-                            >
-                              <Eye size={15} />
-                            </button>
-                            <button
-                              className="btn btn-ghost btn-xs text-green-600 hover:bg-green-50"
-                              onClick={() => handleBayarClick(item)}
-                              title="Tandai Lunas"
-                            >
-                              <CheckCircle size={15} />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
+                          {/* Aksi */}
+                          <td>
+                            <div className="flex gap-1.5 justify-center">
+                              <button
+                                className="btn btn-ghost btn-xs text-blue-600 hover:bg-blue-50"
+                                onClick={() => handleDetailClick(item)}
+                                title="Detail"
+                              >
+                                <Eye size={15} />
+                              </button>
+                              <button
+                                className="btn btn-ghost btn-xs text-green-600 hover:bg-green-50"
+                                onClick={() => handleBayarClick(item)}
+                                title="Tandai Lunas"
+                              >
+                                <CheckCircle size={15} />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
@@ -342,20 +344,24 @@ const ValidasiDenda = () => {
       {/* Detail Modal */}
       {showDetailModal && selectedDenda && (
         <div className="modal modal-open">
-          <div className="modal-box w-11/12 max-w-md">
-            <h3 className="font-bold text-base mb-4 flex items-center gap-2">
-              <Receipt size={18} className="text-blue-600" /> Detail Denda
-            </h3>
+          <div className="modal-box w-11/12 max-w-md p-0 overflow-hidden">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200">
+              <h3 className="font-bold text-sm text-gray-800 flex items-center gap-2">
+                <Receipt size={16} className="text-blue-600" /> Detail Denda
+              </h3>
+              <button
+                className="btn btn-ghost btn-xs btn-circle"
+                onClick={() => { setShowDetailModal(false); setSelectedDenda(null); }}
+              >✕</button>
+            </div>
 
-            <div className="space-y-3 text-sm">
+            <div className="px-4 py-4 space-y-3 max-h-[70vh] overflow-y-auto text-sm">
+              {/* Info Peminjam */}
               <div className="bg-gray-50 rounded-lg p-3 space-y-1.5">
-                <p className="font-semibold text-gray-700 text-xs uppercase tracking-wide mb-2">Info Peminjam</p>
+                <p className="font-semibold text-gray-500 text-xs uppercase tracking-wider mb-2">Info Peminjam</p>
+                <p><span className="text-gray-400 w-28 inline-block">Nama</span><span className="font-medium text-gray-800">{getNama(selectedDenda)}</span></p>
                 <p>
-                  <span className="text-gray-500 w-28 inline-block">Nama</span>
-                  <span className="font-medium text-gray-800">{getNama(selectedDenda)}</span>
-                </p>
-                <p>
-                  <span className="text-gray-500 w-28 inline-block">{activeTab === 'siswa' ? 'NIS' : 'NIP'}</span>
+                  <span className="text-gray-400 w-28 inline-block">{activeTab === 'siswa' ? 'NIS' : 'NIP'}</span>
                   <span className="font-medium text-gray-800">
                     {activeTab === 'siswa'
                       ? getSiswa(selectedDenda)?.nomor_induk_siswa || '-'
@@ -363,38 +369,53 @@ const ValidasiDenda = () => {
                   </span>
                 </p>
                 <p>
-                  <span className="text-gray-500 w-28 inline-block">{activeTab === 'siswa' ? 'Kelas' : 'Jabatan'}</span>
+                  <span className="text-gray-400 w-28 inline-block">{activeTab === 'siswa' ? 'Kelas' : 'Jabatan'}</span>
                   <span className="font-medium text-gray-800">{getSubInfo(selectedDenda)}</span>
                 </p>
               </div>
-
-              {/* Buku */}
-              <div className="bg-gray-50 rounded-lg p-3 space-y-1.5">
-                <p className="font-semibold text-gray-700 text-xs uppercase tracking-wide mb-2">Info Buku</p>
-                <p>
-                  <span className="text-gray-500 w-28 inline-block">Judul</span>
-                  <span className="font-medium text-gray-800">{getBuku(selectedDenda)?.judul || '-'}</span>
-                </p>
-                <p>
-                  <span className="text-gray-500 w-28 inline-block">ISBN</span>
-                  <span className="font-medium text-gray-800">{getBuku(selectedDenda)?.isbn || '-'}</span>
-                </p>
+              <div>
+                <p className="font-semibold text-gray-500 text-xs uppercase tracking-wider mb-2">Rincian Denda per Buku</p>
+                <div className="space-y-2">
+                  {getDetailsDenda(selectedDenda).map((d) => (
+                    <div key={d.id} className="bg-gray-50 rounded-lg p-3 space-y-1">
+                      <p className="font-medium text-gray-800 text-sm">{d.buku?.judul || '-'}</p>
+                      {d.buku?.isbn && <p className="text-xs text-gray-400">{d.buku.isbn}</p>}
+                      <div className="grid grid-cols-2 gap-x-4 gap-y-0.5 mt-1.5 text-xs">
+                        {parseFloat(d.denda_telat) > 0 && (
+                          <><span className="text-gray-400">Denda telat</span><span className="text-red-500 font-medium text-right">{formatRupiah(d.denda_telat)}</span></>
+                        )}
+                        {parseFloat(d.denda_kerusakan) > 0 && (
+                          <><span className="text-gray-400">Denda kerusakan</span><span className="text-orange-500 font-medium text-right">{formatRupiah(d.denda_kerusakan)}</span></>
+                        )}
+                        {parseFloat(d.denda_hilang) > 0 && (
+                          <><span className="text-gray-400">Denda hilang</span><span className="text-red-600 font-medium text-right">{formatRupiah(d.denda_hilang)}</span></>
+                        )}
+                        <span className="text-gray-500 font-semibold">Subtotal</span>
+                        <span className="text-red-600 font-bold text-right">{formatRupiah(d.total_denda_item)}</span>
+                      </div>
+                      <span className={`badge badge-xs mt-1 ${
+                        d.status === 'kembali' ? 'bg-green-100 text-green-700 border-green-200' :
+                        d.status === 'hilang' ? 'bg-red-100 text-red-700 border-red-200' :
+                        'bg-orange-100 text-orange-700 border-orange-200'
+                      }`}>
+                        {d.status?.replace('_', ' ')}
+                      </span>
+                    </div>
+                  ))}
+                </div>
               </div>
 
-              <div className="bg-red-50 rounded-lg p-3 space-y-1.5">
-                <p className="font-semibold text-red-700 text-xs uppercase tracking-wide mb-2">Info Denda</p>
-                <p>
-                  <span className="text-gray-500 w-28 inline-block">Total Denda</span>
-                  <span className="font-bold text-red-600 text-base">{formatRupiah(selectedDenda.nominal)}</span>
-                </p>
-                <p>
-                  <span className="text-gray-500 w-28 inline-block">Tgl Denda</span>
-                  <span className="font-medium text-gray-800">{formatDate(selectedDenda.created_at)}</span>
-                </p>
+              {/* Total */}
+              <div className="bg-red-50 rounded-lg p-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm font-semibold text-red-700">Total Keseluruhan</span>
+                  <span className="text-base font-bold text-red-600">{formatRupiah(selectedDenda.total_denda)}</span>
+                </div>
+                <p className="text-xs text-gray-400 mt-1">Diperbarui: {formatDate(selectedDenda.updated_at)}</p>
               </div>
             </div>
 
-            <div className="modal-action mt-4">
+            <div className="flex justify-end gap-2 px-4 py-3 border-t border-gray-200 bg-gray-50">
               <button
                 className="btn btn-ghost btn-sm"
                 onClick={() => { setShowDetailModal(false); setSelectedDenda(null); }}
@@ -412,8 +433,6 @@ const ValidasiDenda = () => {
           <div className="modal-backdrop" onClick={() => { setShowDetailModal(false); setSelectedDenda(null); }} />
         </div>
       )}
-
-      {/* Modal Konfirmasi Bayar */}
       <ConfirmModal
         isOpen={showBayarModal}
         onClose={() => { setShowBayarModal(false); setSelectedBayar(null); }}
@@ -426,7 +445,7 @@ const ValidasiDenda = () => {
           selectedBayar && (
             <div className="space-y-2">
               <p className="text-sm text-gray-600">
-                Apakah kamu yakin ingin menandai denda berikut sebagai <strong>lunas</strong>?
+                Tandai denda berikut sebagai <strong>lunas</strong>?
               </p>
               <div className="bg-green-50 rounded-lg p-3 space-y-1">
                 <p className="text-sm"><span className="font-semibold">Peminjam:</span> {getNama(selectedBayar)}</p>
@@ -436,11 +455,14 @@ const ValidasiDenda = () => {
                 </p>
                 <p className="text-sm">
                   <span className="font-semibold">Buku:</span>{' '}
-                  {getBuku(selectedBayar)?.judul || '-'}
+                  {getBukuDisplay(selectedBayar).judul}
+                  {getBukuDisplay(selectedBayar).extra && (
+                    <span className="text-blue-500 text-xs ml-1">{getBukuDisplay(selectedBayar).extra}</span>
+                  )}
                 </p>
                 <p className="text-sm">
                   <span className="font-semibold">Total Denda:</span>{' '}
-                  <span className="text-red-600 font-bold">{formatRupiah(selectedBayar.nominal)}</span>
+                  <span className="text-red-600 font-bold">{formatRupiah(selectedBayar.total_denda)}</span>
                 </p>
               </div>
             </div>

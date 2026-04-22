@@ -35,7 +35,7 @@ const DendaSaya = () => {
   };
 
   const formatRupiah = (amount) => {
-    if (!amount) return 'Rp 0';
+    if (!amount && amount !== 0) return 'Rp 0';
     return new Intl.NumberFormat('id-ID', {
       style: 'currency', currency: 'IDR', minimumFractionDigits: 0,
     }).format(amount);
@@ -55,14 +55,14 @@ const DendaSaya = () => {
     setFilterStatus('');
     setCurrentPage(1);
   };
-
-
   const allDendaRows = denda.flatMap((t) =>
     (t.details || [])
-      .filter((d) => d.denda)
+      .filter((d) => parseFloat(d.total_denda_item) > 0)
       .map((d) => ({
         ...d,
         tgl_deadline: t.tgl_deadline,
+        status_denda: t.status_denda, 
+        tgl_lunas: t.tgl_lunas || null,
       }))
   );
 
@@ -70,7 +70,7 @@ const DendaSaya = () => {
     const matchSearch = !searchTerm ||
       row.buku?.judul?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       row.buku?.penulis?.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchStatus = filterStatus ? row.denda?.status_pembayaran === filterStatus : true;
+    const matchStatus = filterStatus ? row.status_denda === filterStatus : true;
     return matchSearch && matchStatus;
   });
 
@@ -96,6 +96,19 @@ const DendaSaya = () => {
       </span>
     );
   };
+  const DendaRincian = ({ row }) => (
+    <div className="space-y-0.5 text-xs">
+      {parseFloat(row.denda_telat) > 0 && (
+        <p className="text-gray-500">Telat: <span className="text-red-500 font-medium">{formatRupiah(row.denda_telat)}</span></p>
+      )}
+      {parseFloat(row.denda_kerusakan) > 0 && (
+        <p className="text-gray-500">Rusak: <span className="text-orange-500 font-medium">{formatRupiah(row.denda_kerusakan)}</span></p>
+      )}
+      {parseFloat(row.denda_hilang) > 0 && (
+        <p className="text-gray-500">Hilang: <span className="text-red-600 font-medium">{formatRupiah(row.denda_hilang)}</span></p>
+      )}
+    </div>
+  );
 
   return (
     <AppLayout>
@@ -103,7 +116,7 @@ const DendaSaya = () => {
         {/* Header */}
         <div className="mb-6">
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Denda Saya</h1>
-          <p className="text-sm text-gray-600 mt-2">Daftar denda keterlambatan pengembalian buku</p>
+          <p className="text-sm text-gray-600 mt-2">Daftar denda keterlambatan &amp; kerusakan buku</p>
         </div>
 
         {/* Filter */}
@@ -117,13 +130,16 @@ const DendaSaya = () => {
                 onChange={(e) => setFilterStatus(e.target.value)}
               >
                 <option value="">Semua Status</option>
-                <option value="belum_lunas">Belum Lunas</option>
+                <option value="belum_bayar">Belum Lunas</option>
                 <option value="lunas">Lunas</option>
               </select>
             </div>
           </div>
           <div className="mt-4">
-            <button className="btn btn-ghost border border-gray-300 hover:bg-gray-50" onClick={resetFilters}>
+            <button
+              className="btn btn-ghost border border-gray-300 hover:bg-gray-50"
+              onClick={resetFilters}
+            >
               Reset
             </button>
           </div>
@@ -185,25 +201,37 @@ const DendaSaya = () => {
                               <h3 className="font-semibold text-sm text-gray-800 leading-tight truncate">
                                 {row.buku?.judul || '-'}
                               </h3>
-                              <StatusBadge status={row.denda?.status_pembayaran} />
+                              <StatusBadge status={row.status_denda} />
                             </div>
-                            <p className="text-xs text-gray-500 mb-2">{row.buku?.penulis || '-'}</p>
+                            <p className="text-xs text-gray-500 mb-1">{row.buku?.penulis || '-'}</p>
+                            {row.status && (
+                              <p className="text-xs text-orange-600 capitalize mb-2">
+                                Kondisi: {row.status.replace('_', ' ')}
+                              </p>
+                            )}
 
                             <div className="bg-red-50 border border-red-200 rounded-lg p-2">
                               <div className="flex items-center justify-between mb-1">
-                                <span className="text-xs text-red-700 font-medium">Denda:</span>
+                                <span className="text-xs text-red-700 font-medium">Total Denda:</span>
                                 <span className="text-sm font-bold text-red-600">
-                                  {formatRupiah(row.denda?.nominal)}
+                                  {formatRupiah(row.total_denda_item)}
                                 </span>
                               </div>
-                              <div className="flex items-center gap-1 text-xs text-gray-500">
+                              <DendaRincian row={row} />
+                              <div className="flex items-center gap-1 text-xs text-gray-500 mt-1.5">
                                 <Clock size={11} />
                                 <span>Deadline: {formatDate(row.tgl_deadline)}</span>
                               </div>
-                              {row.denda?.tgl_pembayaran && (
-                                <div className="flex items-center gap-1 text-xs text-gray-600 mt-0.5">
+                              {row.tgl_kembali && (
+                                <div className="flex items-center gap-1 text-xs text-gray-500 mt-0.5">
                                   <Calendar size={11} />
-                                  <span>Dibayar: {formatDate(row.denda.tgl_pembayaran)}</span>
+                                  <span>Dikembalikan: {formatDate(row.tgl_kembali)}</span>
+                                </div>
+                              )}
+                              {row.tgl_lunas && (
+                                <div className="flex items-center gap-1 text-xs text-green-600 mt-0.5">
+                                  <CheckCircle size={11} />
+                                  <span>Lunas: {formatDate(row.tgl_lunas)}</span>
                                 </div>
                               )}
                             </div>
@@ -224,9 +252,11 @@ const DendaSaya = () => {
                       <th className="w-16 font-semibold text-gray-700">Cover</th>
                       <th className="font-semibold text-gray-700">Judul Buku</th>
                       <th className="font-semibold text-gray-700">Penulis</th>
+                      <th className="w-28 text-center font-semibold text-gray-700">Kondisi</th>
                       <th className="w-32 text-center font-semibold text-gray-700">Deadline</th>
-                      <th className="w-32 text-center font-semibold text-gray-700">Denda</th>
-                      <th className="w-36 text-center font-semibold text-gray-700">Tgl Pembayaran</th>
+                      <th className="w-40 text-right font-semibold text-gray-700">Rincian Denda</th>
+                      <th className="w-32 text-right font-semibold text-gray-700">Total</th>
+                      <th className="w-36 text-center font-semibold text-gray-700">Tgl Kembali</th>
                       <th className="w-32 text-center font-semibold text-gray-700">Status</th>
                     </tr>
                   </thead>
@@ -235,7 +265,7 @@ const DendaSaya = () => {
                       const coverUrl = getCoverUrl(row.buku?.cover);
                       return (
                         <tr key={row.id} className="border-b border-gray-100 hover:bg-gray-50/50 transition-colors">
-                          <td>{startIndex + index + 1}</td>
+                          <td className="text-gray-500">{startIndex + index + 1}</td>
                           <td>
                             {coverUrl ? (
                               <img
@@ -251,17 +281,34 @@ const DendaSaya = () => {
                           </td>
                           <td className="font-medium text-gray-800">{row.buku?.judul || '-'}</td>
                           <td className="text-gray-600 text-sm">{row.buku?.penulis || '-'}</td>
+                          <td className="text-center">
+                            {row.status && row.status !== 'kembali' ? (
+                              <span className="badge badge-sm bg-orange-100 text-orange-700 border-orange-200 capitalize">
+                                {row.status.replace('_', ' ')}
+                              </span>
+                            ) : (
+                              <span className="badge badge-sm bg-green-100 text-green-700 border-green-200">Normal</span>
+                            )}
+                          </td>
                           <td className="text-center text-sm text-gray-600">
                             {formatDate(row.tgl_deadline)}
                           </td>
-                          <td className="text-center">
-                            <span className="font-bold text-red-600">{formatRupiah(row.denda?.nominal)}</span>
+                          <td className="text-right">
+                            <DendaRincian row={row} />
+                          </td>
+                          <td className="text-right">
+                            <span className="font-bold text-red-600">{formatRupiah(row.total_denda_item)}</span>
                           </td>
                           <td className="text-center text-sm text-gray-600">
-                            {row.denda?.tgl_pembayaran ? formatDate(row.denda.tgl_pembayaran) : '-'}
+                            {row.tgl_kembali ? formatDate(row.tgl_kembali) : '-'}
                           </td>
                           <td className="text-center">
-                            <StatusBadge status={row.denda?.status_pembayaran} />
+                            <div className="flex flex-col items-center gap-1">
+                              <StatusBadge status={row.status_denda} />
+                              {row.tgl_lunas && (
+                                <span className="text-xs text-gray-400">{formatDate(row.tgl_lunas)}</span>
+                              )}
+                            </div>
                           </td>
                         </tr>
                       );

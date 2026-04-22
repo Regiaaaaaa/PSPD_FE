@@ -6,8 +6,6 @@ const getHeaders = () => ({
   "Content-Type": "application/json",
   Authorization: `Bearer ${getToken()}`,
 });
-
-// Get semua transaksi yang sedang dipinjam 
 export const getPengembalian = async () => {
   const res = await fetch(API_URL, {
     method: "GET",
@@ -18,12 +16,11 @@ export const getPengembalian = async () => {
   if (!res.ok) throw new Error(data.message || "Gagal memuat data pengembalian");
   return data;
 };
-
-// Terima pengembalian per buku 
-export const terimaPengembalian = async (detailId) => {
+export const terimaPengembalian = async (detailId, status) => {
   const res = await fetch(`${API_URL}/${detailId}/terima`, {
     method: "PATCH",
     headers: getHeaders(),
+    body: JSON.stringify({ status }),
   });
 
   const data = await res.json();
