@@ -21,10 +21,19 @@ export const getVerifikasi = async () => {
 };
 
 // Approve peminjaman
-export const approveVerifikasi = async (id) => {
+export const approveVerifikasi = async (id, tgl_deadline = null, pesan_diterima = null) => {
+  const body = {};
+  if (tgl_deadline) {
+    body.tgl_deadline = tgl_deadline;
+  }
+  if (pesan_diterima) {
+    body.pesan_diterima = pesan_diterima;
+  }
+
   const res = await fetch(`${API_URL}/${id}/approve`, {
     method: "PATCH",
     headers: getHeaders(),
+    body: JSON.stringify(body),
   });
 
   const data = await res.json();

@@ -2,13 +2,27 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import toast from 'react-hot-toast';
 import {
   BookOpen, Clock, Book, AlertTriangle,
-  ShoppingCart, CheckCircle, Plus, Info,
+  ShoppingCart, CheckCircle, Plus, Info, Zap,
 } from 'lucide-react';
 import { getAllBooks } from '../../services/users/katalogService';
 import { ajukanPeminjaman, cekDendaAktif, getMyTransaksi } from '../../services/users/transaksiService';
 import AppLayout from '../../components/AppLayout';
 import Pagination from '../../components/common/Pagination';
 import KeranjangDrawer from './components/KeranjangDrawer';
+
+const DAY_NAMES   = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
+const MONTH_NAMES = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agt','Sep','Okt','Nov','Des'];
+
+const formatDeadlinePreview = (dateStr) => {
+  if (!dateStr) return null;
+  const d = new Date(dateStr + 'T00:00:00');
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const diffDays = Math.round((d - today) / 86400000);
+  return {
+    label: `${DAY_NAMES[d.getDay()]}, ${d.getDate()} ${MONTH_NAMES[d.getMonth()]} ${d.getFullYear()}`,
+    diffDays,
+  };
+};
 
 const StockStatus = ({ stok }) => {
   if (stok > 3) return (
@@ -45,8 +59,8 @@ const DendaBanner = ({ dendaLoading, isBlocked, isBukuTelat, dendaInfo, allTrans
     });
   });
 
-  const totalDenda  = semuaDendaBelumLunas.reduce((sum, d) => sum + d.nominal, 0);
-  const totalBuku   = semuaDendaBelumLunas.length;
+  const totalDenda      = semuaDendaBelumLunas.reduce((sum, d) => sum + d.nominal, 0);
+  const totalBuku       = semuaDendaBelumLunas.length;
   const nominalFallback = dendaInfo?.denda?.nominal || 0;
 
   if (isBukuTelat) {
@@ -141,10 +155,10 @@ const BookCard = ({
   const isSedangDipinjam = transaksiAktif.some(
     (t) => t.status === 'dipinjam' && t.details?.some((d) => d.buku_id === book.id)
   );
-  const coverUrl  = getCoverUrl(book.cover);
-  const habis     = book.stok_tersedia < 1;
-  const cartFull  = cart.length >= 3 && !isInCart;
-  const blocked   = cannotBorrow || habis || isSedangDipinjam || isSedangMenunggu || cartFull;
+  const coverUrl = getCoverUrl(book.cover);
+  const habis    = book.stok_tersedia < 1;
+  const cartFull = cart.length >= 3 && !isInCart;
+  const blocked  = cannotBorrow || habis || isSedangDipinjam || isSedangMenunggu || cartFull;
 
   return (
     <div className="group relative bg-white rounded-xl overflow-hidden shadow-md hover:shadow-2xl transition-all duration-300">
@@ -171,13 +185,15 @@ const BookCard = ({
         <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent opacity-80 group-hover:opacity-90 transition-opacity duration-300" />
 
         <div className="absolute inset-0 p-3 flex flex-col justify-end text-white">
-          {book.kategori && (
-            <div className="mb-1.5">
-              <span className="inline-block px-2 py-0.5 bg-blue-500/90 backdrop-blur-sm rounded-full text-xs font-semibold">
-                {book.kategori.nama_kategori}
-              </span>
-            </div>
-          )}
+          {book.kategori?.length > 0 && (
+  <div className="flex flex-wrap gap-1 mb-1.5">
+    {book.kategori.map((kat) => (
+      <span key={kat.id} className="inline-block px-2 py-0.5 bg-blue-500/90 backdrop-blur-sm rounded-full text-xs font-semibold">
+        {kat.nama_kategori}
+      </span>
+    ))}
+  </div>
+)}
           <h3 className="text-sm font-bold leading-tight mb-1.5 group-hover:text-blue-300 transition-colors duration-200 line-clamp-2">
             {book.judul}
           </h3>
@@ -243,7 +259,7 @@ const BookCard = ({
            : hasPinjamanAktif  ? <span>Ada Pinjaman Aktif</span>
            : isBlocked         ? <span>Tidak Dapat Dipinjam</span>
            : habis             ? <>Stok Habis</>
-           :                     <><Plus size={13} /> Tambah ke Keranjang</>}
+           :                     <><ShoppingCart size={15} /> Tambah</>}
         </button>
       </div>
     </div>
@@ -271,6 +287,12 @@ const KatalogBuku = () => {
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [selectedBook, setSelectedBook] = useState(null);
 
+  // Quick borrow states
+  const [showQuickBorrow, setShowQuickBorrow] = useState(false);
+  const [quickDeadline, setQuickDeadline] = useState('');
+  const [quickKepentingan, setQuickKepentingan] = useState('');
+  const [quickBorrowLoading, setQuickBorrowLoading] = useState(false);
+
   const [cart, setCart] = useState([]);
   const [tglDeadline, setTglDeadline] = useState('');
   const [kepentingan, setKepentingan] = useState('');
@@ -279,12 +301,14 @@ const KatalogBuku = () => {
 
   const todayStr = new Date().toISOString().split('T')[0];
 
-  const isBlocked         = dendaInfo?.ada_denda === true;
-  const isBukuTelat       = dendaInfo?.tipe === 'buku_telat';
-  const hasPinjamanAktif  = transaksiAktif.length > 0;
-  const pinjamanMenunggu  = transaksiAktif.filter((t) => t.status === 'menunggu');
-  const pinjamanDipinjam  = transaksiAktif.filter((t) => t.status === 'dipinjam');
-  const cannotBorrow      = isBlocked || hasPinjamanAktif;
+
+
+  const isBlocked        = dendaInfo?.ada_denda === true;
+  const isBukuTelat      = dendaInfo?.tipe === 'buku_telat';
+  const hasPinjamanAktif = transaksiAktif.length > 0;
+  const pinjamanMenunggu = transaksiAktif.filter((t) => t.status === 'menunggu');
+  const pinjamanDipinjam = transaksiAktif.filter((t) => t.status === 'dipinjam');
+  const cannotBorrow     = isBlocked || hasPinjamanAktif;
 
   const formatRupiah = (nominal) =>
     new Intl.NumberFormat('id-ID', {
@@ -334,11 +358,13 @@ const KatalogBuku = () => {
         const uniqueKategori = [];
         const seen = new Set();
         (data.data || []).forEach((b) => {
-          if (b.kategori && !seen.has(b.kategori.id)) {
-            seen.add(b.kategori.id);
-            uniqueKategori.push(b.kategori);
+        (b.kategori || []).forEach((kat) => {
+          if (!seen.has(kat.id)) {
+            seen.add(kat.id);
+            uniqueKategori.push(kat);
           }
         });
+      });
         setCategories(uniqueKategori);
         const years = [
           ...new Set((data.data || []).map((b) => b.tahun_terbit).filter(Boolean)),
@@ -381,18 +407,18 @@ const KatalogBuku = () => {
   const hasActiveFilter = searchTerm || filterKategori || filterTahun || sortBy;
 
   const filteredBooks = useMemo(() => {
-    return books.filter((book) => {
-      if (!searchTerm) return true;
-      const s = searchTerm.toLowerCase();
-      return (
-        book.judul?.toLowerCase().includes(s) ||
-        book.penulis?.toLowerCase().includes(s) ||
-        book.penerbit?.toLowerCase().includes(s) ||
-        book.isbn?.toLowerCase().includes(s) ||
-        book.kategori?.nama_kategori?.toLowerCase().includes(s)
-      );
-    });
-  }, [books, searchTerm]);
+  return books.filter((book) => {
+    if (!searchTerm) return true;
+    const s = searchTerm.toLowerCase();
+    return (
+      book.judul?.toLowerCase().includes(s) ||
+      book.penulis?.toLowerCase().includes(s) ||
+      book.penerbit?.toLowerCase().includes(s) ||
+      book.isbn?.toLowerCase().includes(s) ||
+      book.kategori?.some((kat) => kat.nama_kategori?.toLowerCase().includes(s))
+    );
+  });
+}, [books, searchTerm]);
 
   const totalPages     = Math.ceil(filteredBooks.length / itemsPerPage);
   const startIndex     = (currentPage - 1) * itemsPerPage;
@@ -418,14 +444,14 @@ const KatalogBuku = () => {
       );
       return;
     }
-    if (book.stok_tersedia < 1)          { toast.error('Stok buku habis!'); return; }
-    if (isSedangDipinjam(book.id))       { toast.error('Kamu masih meminjam buku ini.'); return; }
-    if (isSedangMenunggu(book.id))       { toast.error('Peminjaman buku ini masih menunggu persetujuan.'); return; }
+    if (book.stok_tersedia < 1)    { toast.error('Stok buku habis!'); return; }
+    if (isSedangDipinjam(book.id)) { toast.error('Kamu masih meminjam buku ini.'); return; }
+    if (isSedangMenunggu(book.id)) { toast.error('Peminjaman buku ini masih menunggu persetujuan.'); return; }
     if (isInCart(book.id)) {
       toast('Buku sudah ada di keranjang', { icon: '📚' });
       return;
     }
-    if (cart.length >= 3)                { toast.error('Maksimal 3 buku per pengajuan.'); return; }
+    if (cart.length >= 3) { toast.error('Maksimal 3 buku per pengajuan.'); return; }
 
     setCart((prev) => [
       ...prev,
@@ -478,8 +504,53 @@ const KatalogBuku = () => {
     }
   };
 
-  const openDetailModal  = (book) => { setSelectedBook(book); setShowDetailModal(true); };
-  const closeDetailModal = () => { setShowDetailModal(false); setSelectedBook(null); };
+  const handleQuickBorrow = async (book) => {
+    if (!quickDeadline) { toast.error('Tanggal pengembalian belum diisi.'); return; }
+    setQuickBorrowLoading(true);
+    try {
+      await ajukanPeminjaman({
+        books: [book.id],
+        tgl_deadline: quickDeadline,
+        kepentingan: quickKepentingan || null,
+      });
+      toast.success(`"${book.judul}" berhasil diajukan!`);
+      setShowDetailModal(false);
+      setSelectedBook(null);
+      setShowQuickBorrow(false);
+      setQuickDeadline('');
+      setQuickKepentingan('');
+      fetchBooks();
+      fetchTransaksiAktif();
+    } catch (error) {
+      toast.error(error.message || 'Gagal mengajukan peminjaman');
+    } finally {
+      setQuickBorrowLoading(false);
+    }
+  };
+
+  const openDetailModal = (book) => {
+    setSelectedBook(book);
+    setShowDetailModal(true);
+    setShowQuickBorrow(false);
+    setQuickDeadline('');
+    setQuickKepentingan('');
+  };
+
+  const closeDetailModal = () => {
+    setShowDetailModal(false);
+    setSelectedBook(null);
+    setShowQuickBorrow(false);
+    setQuickDeadline('');
+    setQuickKepentingan('');
+  };
+
+  const canQuickBorrow = (book) =>
+    book &&
+    !cannotBorrow &&
+    !isSedangDipinjam(book.id) &&
+    !isSedangMenunggu(book.id) &&
+    book.stok_tersedia > 0 &&
+    cart.length === 0;
 
   return (
     <AppLayout>
@@ -630,7 +701,7 @@ const KatalogBuku = () => {
           </div>
         )}
 
-        {/* Modal Detail Buku */}
+        {/* ── Modal Detail Buku ── */}
         {showDetailModal && selectedBook && (
           <div className="fixed inset-0 z-[1000] overflow-y-auto" onClick={closeDetailModal}>
             <div className="flex min-h-screen items-center justify-center p-4">
@@ -643,7 +714,9 @@ const KatalogBuku = () => {
                   <BookOpen size={22} className="text-blue-600" />
                   Detail Buku
                 </h3>
+
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
+                  {/* Cover */}
                   <div className="col-span-1">
                     {getCoverUrl(selectedBook.cover) ? (
                       <img
@@ -658,14 +731,20 @@ const KatalogBuku = () => {
                       </div>
                     )}
                   </div>
+
+                  {/* Info */}
                   <div className="col-span-1 md:col-span-2 space-y-3 sm:space-y-4">
                     <div>
                       <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2">{selectedBook.judul}</h2>
-                      {selectedBook.kategori && (
-                        <span className="inline-block px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-semibold">
-                          {selectedBook.kategori.nama_kategori}
-                        </span>
-                      )}
+                      {selectedBook.kategori?.length > 0 && (
+  <div className="flex flex-wrap gap-1">
+    {selectedBook.kategori.map((kat) => (
+      <span key={kat.id} className="inline-block px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-semibold">
+        {kat.nama_kategori}
+      </span>
+    ))}
+  </div>
+)}
                     </div>
                     {selectedBook.isbn && (
                       <div>
@@ -694,6 +773,7 @@ const KatalogBuku = () => {
                       <StockStatus stok={selectedBook.stok_tersedia} />
                     </div>
 
+                    {/* Status warnings */}
                     {hasPinjamanAktif && (
                       <div className="flex items-start gap-2 py-2 px-3 bg-blue-50 border border-blue-200 rounded-lg">
                         <Info size={12} className="text-blue-500 flex-shrink-0 mt-0.5" />
@@ -734,45 +814,134 @@ const KatalogBuku = () => {
                     )}
                   </div>
                 </div>
-                <div className="mt-5 sm:mt-6 flex gap-3">
-                  <button type="button" className="btn btn-ghost flex-1" onClick={closeDetailModal}>
-                    Tutup
-                  </button>
-                  <button
-                    className={`btn flex-1 ${
-                      selectedBook.stok_tersedia > 0 &&
-                      !cannotBorrow &&
-                      !isSedangDipinjam(selectedBook.id) &&
-                      !isSedangMenunggu(selectedBook.id) &&
-                      (cart.length < 3 || isInCart(selectedBook.id))
-                        ? isInCart(selectedBook.id)
-                          ? 'bg-emerald-600 hover:bg-emerald-700 text-white border-none'
-                          : 'bg-blue-600 hover:bg-blue-700 text-white border-none'
-                        : 'btn-disabled'
-                    }`}
-                    disabled={
-                      selectedBook.stok_tersedia === 0 ||
-                      cannotBorrow ||
-                      isSedangDipinjam(selectedBook.id) ||
-                      isSedangMenunggu(selectedBook.id) ||
-                      (cart.length >= 3 && !isInCart(selectedBook.id))
-                    }
-                    onClick={() => {
-                      addToCart(selectedBook);
-                      closeDetailModal();
-                    }}
-                  >
-                    {selectedBook.stok_tersedia === 0          ? 'Stok Habis'
-                     : isSedangMenunggu(selectedBook.id)       ? 'Menunggu Persetujuan'
-                     : isSedangDipinjam(selectedBook.id)       ? 'Sedang Dipinjam'
-                     : hasPinjamanAktif                        ? 'Ada Pinjaman Aktif'
-                     : isBlocked
-                       ? isBukuTelat ? 'Ada Buku Telat' : 'Ada Denda Belum Lunas'
-                     : cart.length >= 3 && !isInCart(selectedBook.id) ? 'Keranjang Penuh'
-                     : isInCart(selectedBook.id)               ? '✓ Sudah di Keranjang'
-                     :                                           'Tambah ke Keranjang'}
-                  </button>
+
+                {/* Footer Modal */}
+                <div className="mt-5 sm:mt-6 space-y-2.5">
+
+                  {/* Quick Borrow Form (compact) */}
+                  {showQuickBorrow && (
+                    <div className="rounded-xl border border-emerald-200 bg-emerald-50 overflow-hidden">
+                      {/* header strip */}
+                      <div className="flex items-center gap-1.5 px-3 py-2 bg-emerald-100/70 border-b border-emerald-200">
+                        <Zap size={12} className="text-emerald-600 flex-shrink-0" />
+                        <p className="text-xs font-semibold text-emerald-700 truncate">
+                          Pinjam Langsung
+                          {selectedBook.judul && (
+                            <span className="font-normal text-emerald-600"> · {selectedBook.judul}</span>
+                          )}
+                        </p>
+                      </div>
+
+                      <div className="p-3 space-y-2.5">
+                        {/* row: tanggal + kepentingan */}
+                        <div className="grid grid-cols-2 gap-2">
+                          <div>
+                            <label className="block text-[11px] font-medium text-gray-500 mb-1">
+                              Tgl kembali <span className="text-red-400">*</span>
+                            </label>
+                            <input
+                              type="date"
+                              className="input input-bordered input-xs w-full bg-white text-xs"
+                              value={quickDeadline}
+                              min={todayStr}
+                              onChange={(e) => setQuickDeadline(e.target.value)}
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[11px] font-medium text-gray-500 mb-1">
+                              Kepentingan <span className="text-gray-400 font-normal">(opsional)</span>
+                            </label>
+                            <input
+                              type="text"
+                              className="input input-bordered input-xs w-full bg-white text-xs"
+                              placeholder="Tugas, belajar..."
+                              value={quickKepentingan}
+                              maxLength={100}
+                              onChange={(e) => setQuickKepentingan(e.target.value)}
+                            />
+                          </div>
+                        </div>
+
+                        {/* deadline preview pill */}
+                        {quickDeadline && (() => {
+                          const preview = formatDeadlinePreview(quickDeadline);
+                          return preview ? (
+                            <div className="flex items-center justify-between px-2.5 py-1.5 bg-white rounded-lg border border-emerald-100">
+                              <span className="text-[11px] text-gray-600">{preview.label}</span>
+                              <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${preview.diffDays <= 3 ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'}`}>
+                                {preview.diffDays} hari lagi
+                              </span>
+                            </div>
+                          ) : null;
+                        })()}
+
+                        {/* actions */}
+                        <div className="flex gap-2">
+                          
+                          <button
+                            className="btn btn-xs flex-1 bg-emerald-600 hover:bg-emerald-700 text-white border-none disabled:opacity-50"
+                            onClick={() => handleQuickBorrow(selectedBook)}
+                            disabled={quickBorrowLoading || !quickDeadline}
+                          >
+                            {quickBorrowLoading
+                              ? <span className="loading loading-spinner loading-xs" />
+                              : <><Zap size={11} className="mr-1" />Ajukan</>}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="flex gap-2 sm:gap-3">
+                    {canQuickBorrow(selectedBook) && (
+                      <button
+                        className={`btn flex-1 border-none transition-all duration-200 ${
+                          showQuickBorrow
+                            ? 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                            : 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                        }`}
+                        onClick={() => setShowQuickBorrow((v) => !v)}
+                      >
+                        <Zap size={14} />
+                        {showQuickBorrow ? 'Tutup' : 'Pinjam Langsung'}
+                      </button>
+                    )}
+
+                    {/* Tambah ke Keranjang */}
+                    <button
+                      className={`btn flex-1 ${
+                        selectedBook.stok_tersedia > 0 &&
+                        !cannotBorrow &&
+                        !isSedangDipinjam(selectedBook.id) &&
+                        !isSedangMenunggu(selectedBook.id) &&
+                        (cart.length < 3 || isInCart(selectedBook.id))
+                          ? isInCart(selectedBook.id)
+                            ? 'bg-blue-100 text-blue-700 border-blue-200 hover:bg-blue-200'
+                            : 'bg-blue-600 hover:bg-blue-700 text-white border-none'
+                          : 'btn-disabled'
+                      }`}
+                      disabled={
+                        selectedBook.stok_tersedia === 0 ||
+                        cannotBorrow ||
+                        isSedangDipinjam(selectedBook.id) ||
+                        isSedangMenunggu(selectedBook.id) ||
+                        (cart.length >= 3 && !isInCart(selectedBook.id))
+                      }
+                      onClick={() => { addToCart(selectedBook); closeDetailModal(); }}
+                    >
+                      {selectedBook.stok_tersedia === 0         ? 'Stok Habis'
+                       : isSedangMenunggu(selectedBook.id)      ? 'Menunggu Persetujuan'
+                       : isSedangDipinjam(selectedBook.id)      ? 'Sedang Dipinjam'
+                       : hasPinjamanAktif                       ? 'Ada Pinjaman Aktif'
+                       : isBlocked
+                         ? isBukuTelat ? 'Ada Buku Telat' : 'Ada Denda Belum Lunas'
+                       : cart.length >= 3 && !isInCart(selectedBook.id) ? 'Keranjang Penuh'
+                       : isInCart(selectedBook.id)              ? <><CheckCircle size={13} /> Sudah di Keranjang</>
+                       :                                          <><ShoppingCart size={15} /></>}
+                    </button>
+                  </div>
                 </div>
+
               </div>
             </div>
           </div>

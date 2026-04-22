@@ -71,7 +71,7 @@ export default function TopBar({ onMenuClick }) {
         setUnreadCount(res.unread_count);
       }
     } catch {
-      // Silent
+      // Silent 
     }
   };
 

@@ -1,4 +1,4 @@
-import { X, CheckCircle, XCircle, BookOpen, AlertCircle } from 'lucide-react';
+import { X, CheckCircle, XCircle, BookOpen, AlertCircle, Calendar } from 'lucide-react';
 
 const DetailVerifikasiModal = ({
   isOpen,
@@ -12,6 +12,10 @@ const DetailVerifikasiModal = ({
   getSubInfoLabel,
   formatDate,
   activeTab,
+  newDeadline,
+  setNewDeadline,
+  pesanDiterima,
+  setPesanDiterima,
 }) => {
   if (!isOpen || !t) return null;
 
@@ -116,8 +120,28 @@ const DetailVerifikasiModal = ({
           {t.tgl_deadline && (
             <div>
               <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Tanggal</p>
-              <div className="bg-gray-50 rounded-lg px-3 py-1">
-                <Row label="Deadline" value={formatDate(t.tgl_deadline)} />
+              <div className="bg-gray-50 rounded-lg px-3 py-2 space-y-2">
+                <div className="flex justify-between items-center py-1">
+                  <span className="text-xs text-gray-400 flex-shrink-0">Deadline Awal</span>
+                  <span className="text-xs font-medium text-gray-700">{formatDate(t.tgl_deadline)}</span>
+                </div>
+                {setNewDeadline && (
+                  <div className="pt-2 border-t border-gray-200">
+                    <label className="flex items-center gap-1.5 text-xs font-semibold text-gray-600 mb-1.5">
+                      <Calendar size={12} className="text-gray-400" />
+                      Ubah Deadline (Opsional)
+                    </label>
+                    <input
+                      type="date"
+                      value={newDeadline}
+                      onChange={(e) => setNewDeadline(e.target.value)}
+                      min={new Date().toISOString().split('T')[0]}
+                      className="input input-bordered input-sm w-full bg-white text-xs focus:border-blue-400 focus:outline-none"
+                      style={{ borderRadius: '8px' }}
+                    />
+                    <p className="text-xs text-gray-400 mt-1">Biarkan kosong untuk menggunakan deadline awal</p>
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -133,6 +157,24 @@ const DetailVerifikasiModal = ({
               )}
             </div>
           </div>
+
+          {/* Pesan Diterima (hanya saat approve) */}
+          {setPesanDiterima && (
+            <div>
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Pesan Diterima (Opsional)</p>
+              <textarea
+                className="textarea textarea-bordered w-full text-xs bg-white focus:border-blue-400 focus:outline-none"
+                rows={2}
+                placeholder="Tuliskan pesan untuk peminjam (opsional)..."
+                value={pesanDiterima || ''}
+                onChange={(e) => setPesanDiterima(e.target.value)}
+                maxLength={255}
+              />
+              <label className="label pt-1">
+                <span className="label-text-alt text-gray-400">{(pesanDiterima || '').length}/255 karakter</span>
+              </label>
+            </div>
+          )}
 
         </div>
 

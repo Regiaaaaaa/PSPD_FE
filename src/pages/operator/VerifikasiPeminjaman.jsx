@@ -28,6 +28,8 @@ const VerifikasiPeminjaman = () => {
   const [showApproveModal, setShowApproveModal] = useState(false);
   const [selectedApprove, setSelectedApprove] = useState(null);
   const [loadingApprove, setLoadingApprove] = useState(false);
+  const [newDeadline, setNewDeadline] = useState('');
+  const [pesanDiterima, setPesanDiterima] = useState('');
 
   // Modal reject
   const [showRejectModal, setShowRejectModal] = useState(false);
@@ -60,6 +62,7 @@ const VerifikasiPeminjaman = () => {
   // Handlers
   const handleDetailClick = (item) => {
     setSelectedTransaksi(item);
+    setNewDeadline(item.tgl_deadline || '');
     setShowDetailModal(true);
   };
 
@@ -67,16 +70,19 @@ const VerifikasiPeminjaman = () => {
     setSelectedTransaksi(null);
     setShowDetailModal(false);
     setSelectedApprove(item);
+    setNewDeadline(prev => prev || item.tgl_deadline || '');
     setShowApproveModal(true);
   };
 
   const handleApproveConfirm = async () => {
     setLoadingApprove(true);
     try {
-      await approveVerifikasi(selectedApprove.id);
+      await approveVerifikasi(selectedApprove.id, newDeadline || null, pesanDiterima || null);
       toast.success('Peminjaman berhasil disetujui');
       setShowApproveModal(false);
       setSelectedApprove(null);
+      setNewDeadline('');
+      setPesanDiterima('');
       fetchVerifikasi();
     } catch (error) {
       toast.error(error?.message || 'Gagal menyetujui peminjaman');
@@ -451,7 +457,11 @@ const VerifikasiPeminjaman = () => {
       {showDetailModal && (
         <DetailVerifikasiModal
           isOpen={showDetailModal}
-          onClose={() => { setShowDetailModal(false); setSelectedTransaksi(null); }}
+          onClose={() => { 
+            setShowDetailModal(false); 
+            setSelectedTransaksi(null);
+            setNewDeadline('');
+          }}
           transaksi={selectedTransaksi}
           onApprove={handleApproveClick}
           onReject={handleRejectClick}
@@ -461,13 +471,22 @@ const VerifikasiPeminjaman = () => {
           getSubInfoLabel={getSubInfoLabel}
           formatDate={formatDate}
           activeTab={activeTab}
+          newDeadline={newDeadline}
+          setNewDeadline={setNewDeadline}
+          pesanDiterima={pesanDiterima}
+          setPesanDiterima={setPesanDiterima}
         />
       )}
 
       {/* Modal Approve */}
       <ConfirmModal
         isOpen={showApproveModal}
-        onClose={() => { setShowApproveModal(false); setSelectedApprove(null); }}
+        onClose={() => { 
+          setShowApproveModal(false); 
+          setSelectedApprove(null);
+          setNewDeadline('');
+          setPesanDiterima('');
+        }}
         onConfirm={handleApproveConfirm}
         title="Setujui Peminjaman"
         type="success"
@@ -502,6 +521,13 @@ const VerifikasiPeminjaman = () => {
                   </ul>
                 </div>
               </div>
+              {newDeadline && newDeadline !== selectedApprove.tgl_deadline && (
+                <div className="bg-blue-50 rounded-lg p-3">
+                  <p className="text-xs text-blue-600">
+                    <span className="font-semibold">Deadline diubah menjadi:</span> {new Date(newDeadline).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
+                  </p>
+                </div>
+              )}
               {!isAllStokOk(selectedApprove) && (
                 <p className="text-xs text-red-500 flex items-center gap-1">
                   <AlertCircle size={12} />

@@ -25,6 +25,7 @@ const KeranjangDrawer = ({
   formatRupiah,
   getCoverUrl,
   todayStr,
+
 }) => {
   const readyToSubmit = cart.length > 0 && !!tglDeadline;
 
@@ -104,7 +105,6 @@ const KeranjangDrawer = ({
                       key={item.buku_id}
                       className="flex items-center gap-3 py-2.5 px-3 rounded-2xl bg-gray-50 hover:bg-gray-100/80 transition-colors"
                     >
-                      {/* Nomor urut */}
                       <span className="w-5 h-5 rounded-full bg-blue-100 text-blue-600 text-xs font-bold flex items-center justify-center flex-shrink-0">
                         {idx + 1}
                       </span>
@@ -137,8 +137,6 @@ const KeranjangDrawer = ({
                   );
                 })}
               </div>
-
-              {/* Sisa slot */}
               {cart.length < 3 && (
                 <p className="text-xs text-gray-400 text-center">
                   Bisa tambah {3 - cart.length} buku lagi
@@ -164,7 +162,7 @@ const KeranjangDrawer = ({
                     style={{ borderRadius: '12px' }}
                   />
                   <p className="text-xs text-gray-400 mt-1.5 ml-0.5">
-                    Berlaku untuk semua buku dalam pengajuan ini
+                    Berlaku untuk semua buku
                   </p>
                 </div>
 
@@ -193,8 +191,6 @@ const KeranjangDrawer = ({
         {cart.length > 0 && (
           <div className="px-5 pb-5 pt-3 space-y-3 bg-white">
             <div className="w-full h-px bg-gray-100" />
-
-            {/* Alert: pinjaman aktif */}
             {hasPinjamanAktif && (
               <div className="flex items-start gap-2 py-2.5 px-3.5 bg-blue-50 rounded-xl">
                 <Info size={12} className="text-blue-400 flex-shrink-0 mt-0.5" />
@@ -205,8 +201,6 @@ const KeranjangDrawer = ({
                 </p>
               </div>
             )}
-
-            {/* Alert: denda */}
             {isBlocked && !hasPinjamanAktif && (
               <div className="flex items-start gap-2 py-2.5 px-3.5 bg-amber-50 rounded-xl">
                 <AlertTriangle size={12} className="text-amber-400 flex-shrink-0 mt-0.5" />
@@ -217,8 +211,6 @@ const KeranjangDrawer = ({
                 </p>
               </div>
             )}
-
-            {/* Summary row */}
             <div className="flex items-center justify-between text-xs text-gray-500">
               <span>{cart.length} buku dipilih</span>
               <span className={tglDeadline ? 'text-emerald-600 font-semibold' : 'text-amber-500'}>

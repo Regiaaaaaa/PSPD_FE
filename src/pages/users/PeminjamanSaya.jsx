@@ -20,6 +20,9 @@ const PeminjamanSaya = () => {
   const [showPesanModal, setShowPesanModal] = useState(false);
   const [selectedPesan, setSelectedPesan] = useState(null);
 
+  const [showPesanDiterimaModal, setShowPesanDiterimaModal] = useState(false);
+  const [selectedPesanDiterima, setSelectedPesanDiterima] = useState(null);
+
   useEffect(() => { fetchTransaksi(); }, []);
   useEffect(() => { setCurrentPage(1); }, [searchTerm, filterStatus]);
 
@@ -118,11 +121,18 @@ const PeminjamanSaya = () => {
   };
 
   const openPesanModal = (t) => {
-    const judulBuku = t.details?.[0]?.buku?.judul || '-';
+    const judulBuku = t.details?.map(d => d.buku?.judul).filter(Boolean).join(', ') || '-';
     setSelectedPesan({ judul: judulBuku, pesan: t.pesan_ditolak });
     setShowPesanModal(true);
   };
   const closePesanModal = () => { setShowPesanModal(false); setSelectedPesan(null); };
+
+  const openPesanDiterimaModal = (t) => {
+    const judulBuku = t.details?.map(d => d.buku?.judul).filter(Boolean).join(', ') || '-';
+    setSelectedPesanDiterima({ judul: judulBuku, pesan: t.pesan_diterima });
+    setShowPesanDiterimaModal(true);
+  };
+  const closePesanDiterimaModal = () => { setShowPesanDiterimaModal(false); setSelectedPesanDiterima(null); };
 
   // Badge total denda di kolom
   const DendaBadge = ({ nominal }) => {
@@ -311,6 +321,14 @@ const PeminjamanSaya = () => {
                               <Info size={13} /> Lihat Pesan
                             </button>
                           )}
+                          {t.status === 'dipinjam' && t.pesan_diterima && (
+                            <button
+                              className="btn btn-xs bg-green-50 text-green-600 hover:bg-green-100 border-green-200"
+                              onClick={() => openPesanDiterimaModal(t)}
+                            >
+                              <Info size={13} /> Lihat Pesan
+                            </button>
+                          )}
                         </div>
                       </div>
                     );
@@ -328,7 +346,8 @@ const PeminjamanSaya = () => {
                       <th className="w-32 text-center font-semibold text-gray-700">Deadline</th>
                       <th className="w-28 text-center font-semibold text-gray-700">Status</th>
                       <th className="w-36 text-center font-semibold text-gray-700">Denda Berjalan</th>
-                      <th className="w-32 text-center font-semibold text-gray-700">Pesan Penolakan</th>
+                      <th className="w-36 text-center font-semibold text-gray-700">Pesan Penolakan</th>
+                      <th className="w-36 text-center font-semibold text-gray-700">Pesan Penerimaan</th>
                       <th className="w-28 text-center font-semibold text-gray-700">Aksi</th>
                     </tr>
                   </thead>
@@ -368,6 +387,19 @@ const PeminjamanSaya = () => {
                               <button
                                 className="btn btn-ghost btn-xs text-blue-600 hover:bg-blue-50 flex items-center gap-1 mx-auto"
                                 onClick={() => openPesanModal(t)}
+                              >
+                                <Info size={14} /> Lihat Pesan
+                              </button>
+                            ) : (
+                              <span className="text-xs text-gray-400">—</span>
+                            )}
+                          </td>
+
+                          <td className="text-center align-top pt-4">
+                            {t.status === 'dipinjam' && t.pesan_diterima ? (
+                              <button
+                                className="btn btn-ghost btn-xs text-green-600 hover:bg-green-50 flex items-center gap-1 mx-auto"
+                                onClick={() => openPesanDiterimaModal(t)}
                               >
                                 <Info size={14} /> Lihat Pesan
                               </button>
@@ -477,6 +509,35 @@ const PeminjamanSaya = () => {
               </div>
             </div>
             <div className="modal-backdrop" onClick={closePesanModal}></div>
+          </div>
+        )}
+
+        {/* Modal Pesan Diterima */}
+        {showPesanDiterimaModal && selectedPesanDiterima && (
+          <div className="modal modal-open">
+            <div className="modal-box w-11/12 max-w-md p-4 sm:p-6">
+              <div className="flex items-start gap-3 mb-4">
+                <div className="flex-1">
+                  <h3 className="font-bold text-base sm:text-lg text-gray-800 mb-1">Pesan Penerimaan</h3>
+                  <p className="text-xs sm:text-sm text-gray-500">
+                    Peminjaman buku "{selectedPesanDiterima.judul}"
+                  </p>
+                </div>
+              </div>
+              <div className="p-3 sm:p-4 bg-green-50 rounded-lg">
+                <p className="text-sm text-gray-700 leading-relaxed">{selectedPesanDiterima.pesan}</p>
+              </div>
+              <div className="modal-action mt-5">
+                <button
+                  type="button"
+                  className="btn btn-sm sm:btn-md bg-green-600 hover:bg-green-700 text-white border-none w-full"
+                  onClick={closePesanDiterimaModal}
+                >
+                  Tutup
+                </button>
+              </div>
+            </div>
+            <div className="modal-backdrop" onClick={closePesanDiterimaModal}></div>
           </div>
         )}
       </div>

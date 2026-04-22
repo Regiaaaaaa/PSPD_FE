@@ -12,7 +12,7 @@ const CreateBook = () => {
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     isbn: '',
-    kategori_id: '',
+    kategori_id: [], 
     judul: '',
     penulis: '',
     penerbit: '',
@@ -38,6 +38,10 @@ const CreateBook = () => {
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+  const handleKategoriChange = (e) => {
+    const selected = Array.from(e.target.selectedOptions).map(o => o.value);
+    setFormData((prev) => ({ ...prev, kategori_id: selected }));
   };
 
   const handleFileChange = (e) => {
@@ -81,8 +85,8 @@ const CreateBook = () => {
       return;
     }
 
-    if (!formData.kategori_id) {
-      toast.error('Kategori harus dipilih');
+    if (!formData.kategori_id.length) {
+      toast.error('Minimal pilih 1 kategori');
       return;
     }
 
@@ -105,7 +109,10 @@ const CreateBook = () => {
     try {
       const formDataToSend = new FormData();
       formDataToSend.append('isbn', formData.isbn);
-      formDataToSend.append('kategori_id', formData.kategori_id);
+      formData.kategori_id.forEach(id => {
+        formDataToSend.append('kategori_id[]', id);
+      });
+
       formDataToSend.append('judul', formData.judul);
       formDataToSend.append('penulis', formData.penulis || '');
       formDataToSend.append('penerbit', formData.penerbit || '');
@@ -146,7 +153,7 @@ const CreateBook = () => {
             {/* Book Information */}
             <fieldset className="border border-gray-300 rounded-lg p-3 sm:p-4 mb-4 sm:mb-6">
               <legend className="text-xs sm:text-sm font-medium text-gray-700 px-2">Informasi Buku</legend>
-              
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
 
                 {/* Judul */}
@@ -192,7 +199,6 @@ const CreateBook = () => {
                     </span>
                   </label>
                 </div>
-
                 <div className="form-control">
                   <label className="label">
                     <span className="label-text text-xs sm:text-sm font-medium">
@@ -200,20 +206,31 @@ const CreateBook = () => {
                     </span>
                   </label>
                   <select
+                    multiple
                     name="kategori_id"
-                    className="select select-sm sm:select-md select-bordered bg-white w-full"
+                    className="select select-sm sm:select-md select-bordered bg-white w-full h-32"
                     value={formData.kategori_id}
-                    onChange={handleInputChange}
-                    required
+                    onChange={handleKategoriChange}
                     disabled={loading}
                   >
-                    <option value="">Pilih Kategori</option>
                     {categories.map((cat) => (
-                      <option key={cat.id} value={cat.id}>
+                      <option key={cat.id} value={String(cat.id)}>
                         {cat.nama_kategori}
                       </option>
                     ))}
                   </select>
+                  <label className="label">
+                  </label>
+                  {formData.kategori_id.length > 0 && (
+                    <div className="flex flex-wrap gap-1 mt-1">
+                      {formData.kategori_id.map(id => {
+                        const cat = categories.find(c => String(c.id) === id);
+                        return cat ? (
+                          <span key={id} className="badge badge-primary badge-xs">{cat.nama_kategori}</span>
+                        ) : null;
+                      })}
+                    </div>
+                  )}
                 </div>
 
                 <div className="form-control">
@@ -291,7 +308,7 @@ const CreateBook = () => {
             {/* Book Cover */}
             <fieldset className="border border-gray-300 rounded-lg p-3 sm:p-4 mb-4 sm:mb-6">
               <legend className="text-xs sm:text-sm font-medium text-gray-700 px-2">Cover Buku</legend>
-              
+
               <div className="form-control">
                 <input
                   type="file"
@@ -305,7 +322,7 @@ const CreateBook = () => {
                     Format: JPG, JPEG, PNG. Maksimal 2MB
                   </span>
                 </label>
-                
+
                 {coverPreview && (
                   <div className="mt-3 sm:mt-4">
                     <p className="text-xs sm:text-sm font-medium mb-2">Preview:</p>

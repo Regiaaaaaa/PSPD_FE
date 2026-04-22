@@ -53,7 +53,9 @@ const MonitoringBuku = () => {
   const hasActiveFilter = searchTerm || filterKategori || filterTahun;
 
   // Get unique categories from books
-  const availableCategories = [...new Set(books.map(book => book.kategori?.nama).filter(Boolean))];
+  const availableCategories = [...new Set(
+  books.flatMap(book => book.kategori?.map(k => k.nama) ?? [])
+)];
 
   // Get unique years from books
   const availableYears = [...new Set(books.map(book => book.tahun_terbit).filter(Boolean))].sort((a, b) => b - a);
@@ -65,7 +67,9 @@ const MonitoringBuku = () => {
       book.penerbit?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       book.isbn?.toLowerCase().includes(searchTerm.toLowerCase());
 
-    const matchKategori = filterKategori ? book.kategori?.nama === filterKategori : true;
+    const matchKategori = filterKategori
+  ? book.kategori?.some(k => k.nama === filterKategori)
+  : true;
     const matchTahun = filterTahun ? book.tahun_terbit === filterTahun : true; // tambah filter tahun
 
     return matchSearch && matchKategori && matchTahun;
@@ -269,9 +273,14 @@ const MonitoringBuku = () => {
                               
                               {/* Badges for Category and Year */}
                               <div className="flex flex-wrap items-center gap-1.5 mt-2">
-                                <span className="badge badge-primary badge-xs whitespace-nowrap text-[10px] px-2 py-0.5">
-                                  {book.kategori?.nama || '-'}
-                                </span>
+                                {book.kategori?.length > 0
+  ? book.kategori.map(k => (
+      <span key={k.id} className="badge badge-primary badge-xs whitespace-nowrap text-[10px] px-2 py-0.5">
+        {k.nama}
+      </span>
+    ))
+  : <span className="text-xs text-gray-400">-</span>
+}
                                 {book.tahun_terbit && (
                                   <span className="badge badge-ghost badge-xs whitespace-nowrap text-[10px] px-2 py-0.5">
                                     {book.tahun_terbit}
@@ -376,9 +385,14 @@ const MonitoringBuku = () => {
                           </td>
                           <td className="max-w-xs truncate">{book.isbn || '-'}</td>
                           <td>
-                            <span className="badge badge-primary badge-sm">
-                              {book.kategori?.nama || '-'}
-                            </span>
+                            <div className="flex flex-wrap gap-1">
+  {book.kategori?.length > 0
+    ? book.kategori.map(k => (
+        <span key={k.id} className="badge badge-primary badge-sm">{k.nama}</span>
+      ))
+    : '-'
+  }
+</div>
                           </td>
                           <td className="max-w-xs truncate">{book.penulis || '-'}</td>
                           <td className="max-w-xs truncate">{book.penerbit || '-'}</td>
@@ -475,9 +489,14 @@ const MonitoringBuku = () => {
                   <div>
                     <label className="text-xs font-semibold text-gray-600">Kategori</label>
                     <p className="mt-1">
-                      <span className="badge badge-primary badge-sm">
-                        {selectedBook.kategori?.nama || '-'}
-                      </span>
+                      <div className="flex flex-wrap gap-1 mt-1">
+  {selectedBook.kategori?.length > 0
+    ? selectedBook.kategori.map(k => (
+        <span key={k.id} className="badge badge-primary badge-sm">{k.nama}</span>
+      ))
+    : '-'
+  }
+</div>
                     </p>
                   </div>
 
