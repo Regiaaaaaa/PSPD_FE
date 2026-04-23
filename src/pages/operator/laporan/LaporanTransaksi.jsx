@@ -127,15 +127,15 @@ export default function LaporanTransaksi() {
     setCurrentPage(1);
     fetchData(bulan, tahun, status);
   };
-  const filtered = data.filter((row) => {
+  const groupedAll = groupByTransaksi(data).filter((group) => {
     const q = searchTerm.toLowerCase();
+    if (!q) return true;
     return (
-      row.nama_user?.toLowerCase().includes(q) ||
-      row.judul_buku?.toLowerCase().includes(q) ||
-      row.status_transaksi?.toLowerCase().includes(q)
+      group.nama_user?.toLowerCase().includes(q) ||
+      group.status_transaksi?.toLowerCase().includes(q) ||
+      group.buku.some((b) => b.judul_buku?.toLowerCase().includes(q))
     );
   });
-  const groupedAll = groupByTransaksi(filtered);
   const totalPages = Math.ceil(groupedAll.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const paginatedGroups = groupedAll.slice(startIndex, startIndex + itemsPerPage);
