@@ -1,4 +1,3 @@
-// components/Operator/OperatorSidebar.jsx
 import { Link, useLocation } from "react-router-dom";
 import { useState, useEffect } from "react";
 
@@ -45,6 +44,7 @@ export default function OperatorSidebar({ isOpen, onClose }) {
     { path: "/operator/monitoring-buku", label: "Books", icon: BookOpen },
     { path: "/operator/verifikasi-peminjaman", label: "Verifikasi", icon: SquareCheckBig },
     { path: "/operator/pengembalian", label: "Pengembalian", icon: BookCheck },
+    { path: "/operator/kelola-transaksi", label: "Kelola Transaksi", icon: ArrowLeftRight },
     { path: "/operator/validasi-denda", label: "Validasi Denda", icon: ReceiptText },
   ];
 

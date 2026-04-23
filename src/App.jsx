@@ -33,6 +33,7 @@ import ValidasiDenda from './pages/operator/ValidasiDenda';
 import LaporanSummary from './pages/operator/laporan/LaporanSummary';
 import LaporanTransaksi from './pages/operator/laporan/LaporanTransaksi';
 import LaporanDenda from './pages/operator/laporan/LaporanDenda';
+import KelolaTransaksi from './pages/operator/KelolaTransaksi';
 
 
 
@@ -80,6 +81,7 @@ function App() {
         <Route path="/operator/laporan" element={<LaporanSummary />} />
         <Route path="/operator/laporan/transaksi" element={<LaporanTransaksi />} />
         <Route path="/operator/laporan/denda" element={<LaporanDenda />} />
+        <Route path="/operator/kelola-transaksi" element={<KelolaTransaksi />} />
 
 
         {/* Forgot Password Flow */}
