@@ -51,6 +51,17 @@ const statusBadge = (status) => {
   }
 };
 
+const detailStatusBadge = (status) => {
+  switch (status) {
+    case "dipinjam":
+      return <span className="badge badge-outline badge-warning badge-xs">dipinjam</span>;
+    case "kembali":
+      return <span className="badge badge-outline badge-success badge-xs">kembali</span>;
+    default:
+      return <span className="badge badge-ghost badge-xs">{status || "-"}</span>;
+  }
+};
+
 const formatDate = (dateStr) => {
   if (!dateStr) return "-";
   return new Date(dateStr).toLocaleDateString("id-ID", {
@@ -60,9 +71,28 @@ const formatDate = (dateStr) => {
   });
 };
 
-const getBukuJudul = (buku = []) => {
-  if (!buku || buku.length === 0) return "-";
-  return buku.map((b) => b.judul).join(", ");
+const groupByTransaksi = (rows) => {
+  const groups = [];
+  rows.forEach((row) => {
+    if (row.rowspan > 0) {
+      groups.push({
+        id: row.id,
+        nama_user: row.nama_user,
+        status_transaksi: row.status_transaksi,
+        tgl_pinjam: row.tgl_pinjam,
+        tgl_deadline: row.tgl_deadline,
+        buku: [],
+      });
+    }
+    if (groups.length > 0) {
+      groups[groups.length - 1].buku.push({
+        judul_buku: row.judul_buku,
+        status_detail: row.status_detail,
+        tgl_kembali: row.tgl_kembali,
+      });
+    }
+  });
+  return groups;
 };
 
 export default function LaporanTransaksi() {
@@ -85,10 +115,7 @@ export default function LaporanTransaksi() {
       const params = { bulan: b, tahun: t };
       if (s) params.status = s;
       const res = await getLaporanTransaksi(params);
-      const valid = (res.data || []).filter(
-        (item) => item.status === "dipinjam" || item.status === "kembali"
-      );
-      setData(valid);
+      setData(res.data || []);
     } catch (err) {
       toast.error(err.message || "Gagal memuat laporan transaksi");
     } finally {
@@ -100,19 +127,31 @@ export default function LaporanTransaksi() {
     setCurrentPage(1);
     fetchData(bulan, tahun, status);
   };
-
-  const filtered = data.filter((item) => {
+  const filtered = data.filter((row) => {
     const q = searchTerm.toLowerCase();
     return (
-      item.nama_user?.toLowerCase().includes(q) ||
-      getBukuJudul(item.buku).toLowerCase().includes(q) ||
-      item.status?.toLowerCase().includes(q)
+      row.nama_user?.toLowerCase().includes(q) ||
+      row.judul_buku?.toLowerCase().includes(q) ||
+      row.status_transaksi?.toLowerCase().includes(q)
     );
   });
-
-  const totalPages = Math.ceil(filtered.length / itemsPerPage);
+  const groupedAll = groupByTransaksi(filtered);
+  const totalPages = Math.ceil(groupedAll.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
-  const paginated = filtered.slice(startIndex, startIndex + itemsPerPage);
+  const paginatedGroups = groupedAll.slice(startIndex, startIndex + itemsPerPage);
+  const paginatedRows = paginatedGroups.flatMap((g) =>
+    g.buku.map((b, i) => ({
+      id: g.id,
+      nama_user: g.nama_user,
+      status_transaksi: i === 0 ? g.status_transaksi : null,
+      rowspan: i === 0 ? g.buku.length : 0,
+      tgl_pinjam: g.tgl_pinjam,
+      tgl_deadline: g.tgl_deadline,
+      judul_buku: b.judul_buku,
+      status_detail: b.status_detail,
+      tgl_kembali: b.tgl_kembali,
+    }))
+  );
 
   const goToPage = (page) => {
     if (page >= 1 && page <= totalPages) setCurrentPage(page);
@@ -236,7 +275,7 @@ export default function LaporanTransaksi() {
             currentPage,
             totalPages,
             itemsPerPage,
-            totalItems: filtered.length,
+            totalItems: groupedAll.length,
             searchTerm,
             onPageChange: goToPage,
             onItemsPerPageChange: (v) => { setItemsPerPage(v); setCurrentPage(1); },
@@ -247,56 +286,64 @@ export default function LaporanTransaksi() {
             <div className="flex justify-center items-center py-16">
               <span className="loading loading-spinner loading-lg text-blue-500" />
             </div>
-          ) : paginated.length === 0 ? (
+          ) : paginatedGroups.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 text-gray-400">
               <ArrowLeftRight size={36} className="mb-2 opacity-40" />
               <p className="text-sm">Tidak ada data transaksi</p>
             </div>
           ) : (
             <>
-              {/* Mobile Card */}
+              {/* Mobile Card — dikelompokkan per transaksi */}
               <div className="block lg:hidden divide-y divide-gray-100">
-                {paginated.map((item, idx) => (
-                  <div key={item.id} className="p-4">
+                {paginatedGroups.map((group, idx) => (
+                  <div key={`${group.id}-${idx}`} className="p-4">
                     <div className="flex items-start justify-between gap-2 mb-2">
                       <div className="min-w-0">
                         <p className="font-semibold text-sm text-gray-800 truncate">
-                          {getBukuJudul(item.buku)}
+                          {group.nama_user || "-"}
                         </p>
-                        <p className="text-xs text-gray-500 mt-0.5 truncate">
-                          {item.nama_user || "-"}
-                        </p>
-                        {item.total_buku > 1 && (
+                        {group.buku.length > 1 && (
                           <p className="text-[10px] text-blue-500 mt-0.5">
-                            {item.total_buku} buku
+                            {group.buku.length} buku
                           </p>
                         )}
                       </div>
                       <div className="flex-shrink-0 flex flex-col items-end gap-1">
                         <span className="text-xs text-gray-400">#{startIndex + idx + 1}</span>
-                        {statusBadge(item.status)}
+                        {statusBadge(group.status_transaksi)}
                       </div>
                     </div>
+                    <div className="space-y-1.5 mb-3">
+                      {group.buku.map((b, bi) => (
+                        <div key={bi} className="flex items-center justify-between gap-2 bg-gray-50 rounded-lg px-3 py-2">
+                          <p className="text-xs text-gray-700 truncate">{b.judul_buku}</p>
+                          <div className="flex items-center gap-1.5 flex-shrink-0">
+                            {b.tgl_kembali && (
+                              <span className="text-[10px] text-gray-400">{formatDate(b.tgl_kembali)}</span>
+                            )}
+                            {detailStatusBadge(b.status_detail)}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
 
-                    <div className="grid grid-cols-2 gap-2 mt-3">
+                    <div className="grid grid-cols-2 gap-2">
                       <div className="bg-gray-50 rounded-lg p-2">
                         <p className="text-[10px] text-gray-400 mb-0.5">Tgl Pinjam</p>
                         <p className="text-xs font-medium text-gray-700 leading-tight">
-                          {formatDate(item.tgl_pinjam)}
+                          {formatDate(group.tgl_pinjam)}
                         </p>
                       </div>
                       <div className="bg-gray-50 rounded-lg p-2">
                         <p className="text-[10px] text-gray-400 mb-0.5">Deadline</p>
                         <p className="text-xs font-medium text-gray-700 leading-tight">
-                          {formatDate(item.tgl_deadline)}
+                          {formatDate(group.tgl_deadline)}
                         </p>
                       </div>
                     </div>
                   </div>
                 ))}
               </div>
-
-              {/* Desktop Table */}
               <div className="hidden lg:block overflow-x-auto">
                 <table className="table w-full">
                   <thead>
@@ -304,33 +351,83 @@ export default function LaporanTransaksi() {
                       <th className="w-12 font-semibold text-gray-700">No</th>
                       <th className="font-semibold text-gray-700">Peminjam</th>
                       <th className="font-semibold text-gray-700">Judul Buku</th>
-                      <th className="font-semibold text-gray-700">Total Buku</th>
+                      <th className="font-semibold text-gray-700">Status Buku</th>
                       <th className="font-semibold text-gray-700">Tgl Pinjam</th>
                       <th className="font-semibold text-gray-700">Deadline</th>
+                      <th className="font-semibold text-gray-700">Tgl Kembali</th>
                       <th className="font-semibold text-gray-700 text-center">Status</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {paginated.map((item, idx) => (
-                      <tr
-                        key={item.id}
-                        className="border-b border-gray-100 hover:bg-gray-50/50 transition-colors"
-                      >
-                        <td className="text-sm text-gray-500">{startIndex + idx + 1}</td>
-                        <td className="text-sm font-medium text-gray-700">
-                          {item.nama_user || "-"}
-                        </td>
-                        <td className="text-sm text-gray-700 max-w-xs truncate">
-                          {getBukuJudul(item.buku)}
-                        </td>
-                        <td className="text-sm text-gray-600 text-center">
-                          {item.total_buku ?? "-"}
-                        </td>
-                        <td className="text-sm text-gray-600">{formatDate(item.tgl_pinjam)}</td>
-                        <td className="text-sm text-gray-600">{formatDate(item.tgl_deadline)}</td>
-                        <td className="text-center">{statusBadge(item.status)}</td>
-                      </tr>
-                    ))}
+                    {(() => {
+                      let trxCounter = 0;
+                      return paginatedRows.map((row, idx) => {
+                        const isFirstRow = row.rowspan > 0;
+                        if (isFirstRow) trxCounter++;
+                        const trxNo = startIndex + trxCounter;
+
+                        return (
+                          <tr
+                            key={`${row.id}-${idx}`}
+                            className="border-b border-gray-100 hover:bg-gray-50/50 transition-colors"
+                          >
+                            {isFirstRow && (
+                              <td
+                                rowSpan={row.rowspan}
+                                className="text-sm text-gray-500 align-middle"
+                              >
+                                {trxNo}
+                              </td>
+                            )}
+                            {isFirstRow && (
+                              <td
+                                rowSpan={row.rowspan}
+                                className="text-sm font-medium text-gray-700 align-middle"
+                              >
+                                {row.nama_user || "-"}
+                              </td>
+                            )}
+
+                            {/* Kolom per buku */}
+                            <td className="text-sm text-gray-700 max-w-[200px] truncate">
+                              {row.judul_buku || "-"}
+                            </td>
+                            <td className="text-sm">
+                              {detailStatusBadge(row.status_detail)}
+                            </td>
+
+                            {isFirstRow && (
+                              <td
+                                rowSpan={row.rowspan}
+                                className="text-sm text-gray-600 align-middle"
+                              >
+                                {formatDate(row.tgl_pinjam)}
+                              </td>
+                            )}
+                            {isFirstRow && (
+                              <td
+                                rowSpan={row.rowspan}
+                                className="text-sm text-gray-600 align-middle"
+                              >
+                                {formatDate(row.tgl_deadline)}
+                              </td>
+                            )}
+                            <td className="text-sm text-gray-600">
+                              {formatDate(row.tgl_kembali)}
+                            </td>
+
+                            {isFirstRow && (
+                              <td
+                                rowSpan={row.rowspan}
+                                className="text-center align-middle"
+                              >
+                                {statusBadge(row.status_transaksi)}
+                              </td>
+                            )}
+                          </tr>
+                        );
+                      });
+                    })()}
                   </tbody>
                 </table>
               </div>
@@ -339,7 +436,7 @@ export default function LaporanTransaksi() {
                 currentPage,
                 totalPages,
                 itemsPerPage,
-                totalItems: filtered.length,
+                totalItems: groupedAll.length,
                 searchTerm,
                 onPageChange: goToPage,
                 onItemsPerPageChange: (v) => { setItemsPerPage(v); setCurrentPage(1); },
