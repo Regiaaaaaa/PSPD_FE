@@ -390,7 +390,7 @@ const KelolaTransaksi = () => {
                           <td className="text-center">
                             {item.status_denda
                               ? <Badge config={STATUS_DENDA_CONFIG[item.status_denda]} fallbackKey={item.status_denda} />
-                              : <span className="text-xs text-gray-400">Tidak ada</span>
+                              : <span className="text-xs text-gray-400">Tidak Memiliki Denda</span>
                             }
                           </td>
 

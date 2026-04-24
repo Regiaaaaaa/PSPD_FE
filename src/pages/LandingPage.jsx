@@ -73,10 +73,7 @@ function LandingPage() {
               </span>
             </div>
           </div>
-
-          {/* Stats Section */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 max-w-2xl mx-auto mb-8 sm:mb-10">
-            {/* Card 1 */}
             <div className="group bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-md p-4 text-center transition-all duration-300 hover:-translate-y-0.5">
               <div className="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center mx-auto mb-2 group-hover:bg-blue-100 transition-colors">
                 <BookOpen className="w-5 h-5 text-blue-600" />
@@ -84,8 +81,6 @@ function LandingPage() {
               <p className="text-xl sm:text-2xl font-bold text-gray-900 mb-0.5">1000+</p>
               <p className="text-xs text-gray-600 font-medium">Koleksi Buku</p>
             </div>
-
-            {/* Card 2 */}
             <div className="group bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-md p-4 text-center transition-all duration-300 hover:-translate-y-0.5">
               <div className="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center mx-auto mb-2 group-hover:bg-blue-100 transition-colors">
                 <GraduationCap className="w-5 h-5 text-blue-600" />
@@ -93,8 +88,6 @@ function LandingPage() {
               <p className="text-xl sm:text-2xl font-bold text-gray-900 mb-0.5">500+</p>
               <p className="text-xs text-gray-600 font-medium">Siswa Aktif</p>
             </div>
-
-            {/* Card 3 */}
             <div className="group bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-md p-4 text-center transition-all duration-300 hover:-translate-y-0.5">
               <div className="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center mx-auto mb-2 group-hover:bg-blue-100 transition-colors">
                 <User className="w-5 h-5 text-blue-600" />
